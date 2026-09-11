@@ -23,6 +23,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/unitedrhino/docling/internal/pdfenc"
 )
 
 // ItemType 定义 content_list 中元素的模态类型。
@@ -262,7 +264,7 @@ func textGarbageRatio(text string) float64 {
 			continue
 		}
 		total++
-		if r == '\uFFFD' || unicode.IsControl(r) || isUnicodePrivateUse(r) {
+		if r == '\uFFFD' || unicode.IsControl(r) || pdfenc.IsUnicodePrivateUse(r) {
 			bad++
 		}
 	}

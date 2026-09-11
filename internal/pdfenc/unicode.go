@@ -1,4 +1,6 @@
-// pdf_unicode.go 实现 PDF 文本层的纯 Go Unicode 恢复。
+// unicode.go 实现 PDF 文本层的纯 Go Unicode 字符编码恢复：ToUnicode
+// CMap 解析、标准 CJK 命名编码、自定义 Encoding CMap 以及 CIDToGIDMap 与
+// 嵌入 TrueType/OpenType cmap 反推。本包只做字节级字符映射，不感知版面。
 //
 // ledongthuc/pdf 能读取常见 ToUnicode，但对缺失 ToUnicode 的 Type0
 // Identity-H 字体只能按单字节 PDFDocEncoding 降级，中文会变成替换符；其
@@ -6,7 +8,7 @@
 // 只读路径：优先解析完整 ToUnicode CMap，缺失时通过 CIDToGIDMap 与嵌入
 // TrueType/OpenType cmap 反推 Unicode。恢复结果没有可靠逐字坐标，因此只在
 // 乱码显著减少时作为无坐标文本兜底，并继续触发可选结构化视觉恢复版面。
-package docparse
+package pdfenc
 
 import (
 	"encoding/binary"
@@ -63,7 +65,7 @@ type pdfCIDCMap struct {
 
 // decode 按 codespace 切分字节并映射为 Unicode；未知字符保留替换符，避免
 // 把不可证明的字体码伪装成正确正文。
-func (cmap *pdfUnicodeCMap) decode(raw []byte) string {
+func (cmap *pdfUnicodeCMap) Decode(raw []byte) string {
 	if cmap == nil || len(raw) == 0 {
 		return ""
 	}
@@ -159,7 +161,16 @@ func parsePDFToUnicodeCMap(data []byte) (*pdfUnicodeCMap, bool) {
 
 // parsePDFCIDCMap 解析 Encoding CMap 的 codespacerange、cidchar 和
 // cidrange。CID 按规范限制为 16 位，畸形或超大范围被跳过。
-func parsePDFCIDCMap(data []byte) (*pdfCIDCMap, bool) {
+// Lookup 返回字符码映射的 CID;未命中时返回 0。cidrange 在解析期已
+// 展开为逐字符码映射，这里无需再做范围运算。
+func (cmap *pdfCIDCMap) Lookup(code string) uint16 {
+	if value, ok := cmap.mappings[code]; ok {
+		return value
+	}
+	return 0
+}
+
+func ParseCIDCMap(data []byte) (*pdfCIDCMap, bool) {
 	tokens := lexPDFCMap(data)
 	if len(tokens) == 0 {
 		return nil, false
@@ -527,74 +538,10 @@ func pdfBigEndianBytes(value uint32, size int) []byte {
 	return result
 }
 
-// recoverPDFUnicodeLines 在现有坐标文本乱码明显时尝试第二条字体解码路径。
-func recoverPDFUnicodeLines(page pdf.Page, pageIdx int64, existing []pdfLine) []pdfLine {
-	existingText := joinPDFLineText(existing)
-	candidate := hasPDFUnicodeRecoveryCandidate(page)
-	if !candidate && strings.TrimSpace(existingText) != "" && textGarbageRatio(existingText) < 0.05 {
-		return existing
-	}
-	recovered, ok := extractPDFUnicodeText(page)
-	if !ok || !pdfUnicodeRecoveryBetter(existingText, recovered, candidate) {
-		return existing
-	}
-	var lines []pdfLine
-	for _, text := range strings.Split(strings.ReplaceAll(recovered, "\r\n", "\n"), "\n") {
-		text = normalizePDFExtractText(text)
-		if text == "" {
-			continue
-		}
-		lines = append(lines, pdfLine{Text: text, PageIdx: pageIdx, Fallback: true})
-	}
-	if len(lines) == 0 {
-		return existing
-	}
-	return lines
-}
-
-// pdfUnicodeRecoveryBetter 只接受有足够正文且乱码率严格下降的恢复结果。
-func pdfUnicodeRecoveryBetter(existing, recovered string, authoritative bool) bool {
-	existing = strings.TrimSpace(sanitizeText(existing))
-	recovered = strings.TrimSpace(sanitizeText(recovered))
-	if recovered == "" || utf8.RuneCountInString(recovered) < 2 {
-		return false
-	}
-	if recovered == existing {
-		return false
-	}
-	existingRatio, recoveredRatio := textGarbageRatio(existing), textGarbageRatio(recovered)
-	if existing == "" {
-		return recoveredRatio < 0.2
-	}
-	if authoritative && recoveredRatio < 0.05 && pdfUnicodePrintableRatio(recovered) >= 0.8 &&
-		utf8.RuneCountInString(recovered) >= utf8.RuneCountInString(existing) {
-		return true
-	}
-	return existingRatio >= 0.05 && recoveredRatio+0.02 < existingRatio
-}
-
-// pdfUnicodePrintableRatio 统计可检索字符占比，用于拒绝错误字符集产生的控制串。
-func pdfUnicodePrintableRatio(text string) float64 {
-	total, printable := 0, 0
-	for _, char := range text {
-		if unicode.IsSpace(char) {
-			continue
-		}
-		total++
-		if !unicode.IsControl(char) && char != unicode.ReplacementChar && !isUnicodePrivateUse(char) {
-			printable++
-		}
-	}
-	if total == 0 {
-		return 0
-	}
-	return float64(printable) / float64(total)
-}
-
 // hasPDFUnicodeRecoveryCandidate 判断页面是否含官方 ToUnicode、标准 CJK
 // 命名 CMap、可通过嵌入字体恢复的 Identity Type0 字体，或主库不会递归的
 // Form XObject。
-func hasPDFUnicodeRecoveryCandidate(page pdf.Page) bool {
+func HasUnicodeRecoveryCandidate(page pdf.Page) bool {
 	defer func() { _ = recover() }()
 	resources := page.Resources()
 	fonts := resources.Key("Font")
@@ -605,7 +552,7 @@ func hasPDFUnicodeRecoveryCandidate(page pdf.Page) bool {
 		}
 		encodingValue := font.V.Key("Encoding")
 		encodingName := encodingValue.Name()
-		if namedPDFCMapDecoder(encodingName) != nil {
+		if NamedCMapDecoder(encodingName) != nil {
 			return true
 		}
 		if encodingValue.Kind() != pdf.Stream && encodingName != "Identity-H" && encodingName != "Identity-V" {
@@ -628,7 +575,7 @@ func hasPDFUnicodeRecoveryCandidate(page pdf.Page) bool {
 
 // extractPDFUnicodeText 读取页面内容流并按字体解码文本操作符。函数对第三方
 // PDF 解释器 panic 做流级隔离，单个畸形 Form 不影响页面其他内容。
-func extractPDFUnicodeText(page pdf.Page) (string, bool) {
+func ExtractUnicodeText(page pdf.Page) (string, bool) {
 	extractor := &pdfUnicodeTextExtractor{}
 	extractor.extract(page.V.Key("Contents"), page.Resources(), 0)
 	result := strings.TrimSpace(extractor.out.String())
@@ -655,7 +602,7 @@ func (extractor *pdfUnicodeTextExtractor) appendRaw(current *pdfUnicodeCMap, raw
 	if current == nil {
 		return
 	}
-	decoded := current.decode([]byte(raw))
+	decoded := current.Decode([]byte(raw))
 	extractor.out.WriteString(decoded)
 	if decoded != "" {
 		extractor.lineEnded = strings.HasSuffix(decoded, "\n")
@@ -676,7 +623,7 @@ func (extractor *pdfUnicodeTextExtractor) extract(stream, resources pdf.Value, d
 	fonts := map[string]*pdfUnicodeCMap{}
 	fontResources := resources.Key("Font")
 	for _, name := range fontResources.Keys() {
-		fonts[name] = newPDFUnicodeFont(pdf.Font{V: fontResources.Key(name)})
+		fonts[name] = NewUnicodeFont(pdf.Font{V: fontResources.Key(name)})
 	}
 	var current *pdfUnicodeCMap
 	pdf.Interpret(stream, func(stack *pdf.Stack, operator string) {
@@ -743,8 +690,8 @@ func (extractor *pdfUnicodeTextExtractor) extract(stream, resources pdf.Value, d
 // newPDFUnicodeFont 构造字体解码器：自带 ToUnicode 时使用更完整的 CMap
 // 解析；缺失时对 Identity-H/V 或自定义 Encoding CMap 的 Type0 字体尝试
 // 经 CIDToGIDMap 与嵌入 sfnt 反向映射。
-func newPDFUnicodeFont(font pdf.Font) *pdfUnicodeCMap {
-	if data, ok := readPDFUnicodeStream(font.V.Key("ToUnicode")); ok {
+func NewUnicodeFont(font pdf.Font) *pdfUnicodeCMap {
+	if data, ok := ReadUnicodeStream(font.V.Key("ToUnicode")); ok {
 		if cmap, parsed := parsePDFToUnicodeCMap(data); parsed {
 			cmap.fallback = safePDFFontEncoder(font)
 			return cmap
@@ -752,7 +699,7 @@ func newPDFUnicodeFont(font pdf.Font) *pdfUnicodeCMap {
 	}
 	encodingValue := font.V.Key("Encoding")
 	encoding := encodingValue.Name()
-	if decoder := namedPDFCMapDecoder(encoding); decoder != nil {
+	if decoder := NamedCMapDecoder(encoding); decoder != nil {
 		return decoder
 	}
 	fallback := safePDFFontEncoder(font)
@@ -768,7 +715,7 @@ func newPDFUnicodeFont(font pdf.Font) *pdfUnicodeCMap {
 // namedPDFCMapDecoder 为 Adobe 标准 CJK 命名 CMap 选择纯 Go 字符集。
 // Unicode CMap 的字符码直接是 UTF-16BE；区域编码 CMap 分别复用 x/text
 // 的 GBK/GB18030、Big5、Shift-JIS、EUC-JP 和 EUC-KR 解码器。
-func namedPDFCMapDecoder(name string) *pdfUnicodeCMap {
+func NamedCMapDecoder(name string) *pdfUnicodeCMap {
 	upper := strings.ToUpper(strings.TrimSpace(name))
 	if upper == "" || upper == "IDENTITY-H" || upper == "IDENTITY-V" {
 		return nil
@@ -828,22 +775,22 @@ func embeddedPDFUnicodeCMap(fontValue pdf.Value, fallback pdf.TextEncoding) (*pd
 	if fontStream.IsNull() {
 		fontStream = descriptor.Key("FontFile3")
 	}
-	fontData, ok := readPDFUnicodeStream(fontStream)
+	fontData, ok := ReadUnicodeStream(fontStream)
 	if !ok {
 		return nil, false
 	}
-	glyphs := parseSFNTGlyphUnicode(fontData)
+	glyphs := ParseSFNTGlyphUnicode(fontData)
 	if len(glyphs) == 0 {
 		return nil, false
 	}
-	cidToGID := parsePDFCIDToGID(descendant.Key("CIDToGIDMap"))
+	cidToGID := ParseCIDToGID(descendant.Key("CIDToGIDMap"))
 	cmap := &pdfUnicodeCMap{
 		mappings: map[string]string{},
 		ranges:   []pdfUnicodeCodeRange{{low: 0, high: 0xffff, size: 2}},
 		lengths:  []int{2}, fallback: fallback,
 	}
-	if encodingData, read := readPDFUnicodeStream(fontValue.Key("Encoding")); read {
-		if encodingCMap, parsed := parsePDFCIDCMap(encodingData); parsed {
+	if encodingData, read := ReadUnicodeStream(fontValue.Key("Encoding")); read {
+		if encodingCMap, parsed := ParseCIDCMap(encodingData); parsed {
 			cmap.ranges = append([]pdfUnicodeCodeRange(nil), encodingCMap.ranges...)
 			for source, cid := range encodingCMap.mappings {
 				glyphID := cid
@@ -879,11 +826,11 @@ func embeddedPDFUnicodeCMap(fontValue pdf.Value, fallback pdf.TextEncoding) (*pd
 }
 
 // parsePDFCIDToGID 返回显式 CIDToGIDMap；nil 表示 Identity 或缺省映射。
-func parsePDFCIDToGID(value pdf.Value) map[uint16]uint16 {
+func ParseCIDToGID(value pdf.Value) map[uint16]uint16 {
 	if value.IsNull() || value.Name() == "Identity" {
 		return nil
 	}
-	data, ok := readPDFUnicodeStream(value)
+	data, ok := ReadUnicodeStream(value)
 	if !ok || len(data) < 2 {
 		return nil
 	}
@@ -902,7 +849,7 @@ func parsePDFCIDToGID(value pdf.Value) map[uint16]uint16 {
 }
 
 // readPDFUnicodeStream 有界读取 PDF stream，并隔离不支持过滤器造成的 panic。
-func readPDFUnicodeStream(value pdf.Value) (data []byte, ok bool) {
+func ReadUnicodeStream(value pdf.Value) (data []byte, ok bool) {
 	if value.Kind() != pdf.Stream {
 		return nil, false
 	}
@@ -922,7 +869,7 @@ func readPDFUnicodeStream(value pdf.Value) (data []byte, ok bool) {
 
 // parseSFNTGlyphUnicode 从 sfnt/TrueType collection 的 Unicode cmap
 // 反向构造 glyph ID 到字符映射，支持 format 0/4/6/12。
-func parseSFNTGlyphUnicode(data []byte) map[uint16]rune {
+func ParseSFNTGlyphUnicode(data []byte) map[uint16]rune {
 	fontOffset := 0
 	if len(data) >= 16 && string(data[:4]) == "ttcf" {
 		fontOffset = int(binary.BigEndian.Uint32(data[12:16]))
@@ -1123,13 +1070,13 @@ func addSFNTGlyphRune(result map[uint16]rune, glyphID uint16, char rune) {
 		return
 	}
 	existing, found := result[glyphID]
-	if !found || (isUnicodePrivateUse(existing) && !isUnicodePrivateUse(char)) {
+	if !found || (IsUnicodePrivateUse(existing) && !IsUnicodePrivateUse(char)) {
 		result[glyphID] = char
 	}
 }
 
 // isUnicodePrivateUse 判断 Unicode 私用区，避免依赖未导出的标准库属性表。
-func isUnicodePrivateUse(char rune) bool {
+func IsUnicodePrivateUse(char rune) bool {
 	return char >= 0xE000 && char <= 0xF8FF ||
 		char >= 0xF0000 && char <= 0xFFFFD ||
 		char >= 0x100000 && char <= 0x10FFFD

@@ -49,6 +49,8 @@ import (
 	"strings"
 
 	"github.com/xuri/excelize/v2"
+
+	"github.com/unitedrhino/docling/internal/ooxml"
 )
 
 const (
@@ -206,7 +208,7 @@ type xlsxPivotTableMeta struct {
 // 图表与批注。隐藏 sheet 使用 invisible 层；空内容不视为错误。
 func ParseXLSX(data []byte) (*DoclingDocument, error) {
 	var err error
-	data, err = normalizeStrictOOXMLPackage(data)
+	data, err = ooxml.NormalizeStrictOOXMLPackage(data)
 	if err != nil {
 		return nil, fmt.Errorf("docparse: 归一化 Strict XLSX 失败: %w", err)
 	}

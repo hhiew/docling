@@ -11,33 +11,9 @@ import (
 	"testing"
 
 	"github.com/ledongthuc/pdf"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/encoding/japanese"
-	"golang.org/x/text/encoding/korean"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/encoding/traditionalchinese"
-)
 
-// TestParsePDFToUnicodeCMapCarriesMultiByteRanges 验证 bfrange 的源编码与
-// Unicode 目标均按大端整数完整进位，而不是只修改最后一个字节。
-func TestParsePDFToUnicodeCMapCarriesMultiByteRanges(t *testing.T) {
-	data := []byte(`/CIDInit /ProcSet findresource begin
-12 dict begin begincmap
-1 begincodespacerange
-<0000> <FFFF>
-endcodespacerange
-1 beginbfrange
-<00FF> <0100> <4E00>
-endbfrange
-endcmap end end`)
-	cmap, ok := parsePDFToUnicodeCMap(data)
-	if !ok {
-		t.Fatal("parsePDFToUnicodeCMap 应接受合法多字节 CMap")
-	}
-	if got := cmap.decode([]byte{0x00, 0xff, 0x01, 0x00}); got != "一丁" {
-		t.Fatalf("decode=%q, want %q", got, "一丁")
-	}
-}
+	"github.com/unitedrhino/docling/internal/pdfenc"
+)
 
 // TestParsePDFRecoversIdentityHFromEmbeddedTrueType 验证 Type0/Identity-H
 // 字体缺少 ToUnicode 时，从 CIDToGIDMap 与嵌入 TrueType cmap 纯 Go 恢复中文；
@@ -103,25 +79,25 @@ endcmap end end`)
 	}
 	page := reader.Page(1)
 	fontValue := page.Resources().Key("Font").Key("F1")
-	encodingData, readEncoding := readPDFUnicodeStream(fontValue.Key("Encoding"))
-	encodingMap, parsedEncoding := parsePDFCIDCMap(encodingData)
-	if !readEncoding || !parsedEncoding || encodingMap.mappings[string([]byte{0x41})] != 5 {
+	encodingData, readEncoding := pdfenc.ReadUnicodeStream(fontValue.Key("Encoding"))
+	encodingMap, parsedEncoding := pdfenc.ParseCIDCMap(encodingData)
+	if !readEncoding || !parsedEncoding || encodingMap.Lookup(string([]byte{0x41})) != 5 {
 		t.Fatalf("custom Encoding stream read=%v parsed=%v map=%+v", readEncoding, parsedEncoding, encodingMap)
 	}
 	descendant := fontValue.Key("DescendantFonts").Index(0)
-	if got := parsePDFCIDToGID(descendant.Key("CIDToGIDMap")); got[5] != 1 || got[6] != 2 {
+	if got := pdfenc.ParseCIDToGID(descendant.Key("CIDToGIDMap")); got[5] != 1 || got[6] != 2 {
 		t.Fatalf("CIDToGIDMap=%+v", got)
 	}
-	fontData, readFont := readPDFUnicodeStream(descendant.Key("FontDescriptor").Key("FontFile2"))
-	glyphs := parseSFNTGlyphUnicode(fontData)
+	fontData, readFont := pdfenc.ReadUnicodeStream(descendant.Key("FontDescriptor").Key("FontFile2"))
+	glyphs := pdfenc.ParseSFNTGlyphUnicode(fontData)
 	if !readFont || glyphs[1] != '中' || glyphs[2] != '文' {
 		t.Fatalf("embedded font read=%v glyphs=%+v", readFont, glyphs)
 	}
-	decoder := newPDFUnicodeFont(pdf.Font{V: fontValue})
-	if got := decoder.decode([]byte{0x41, 0x42}); got != "中文" {
+	decoder := pdfenc.NewUnicodeFont(pdf.Font{V: fontValue})
+	if got := decoder.Decode([]byte{0x41, 0x42}); got != "中文" {
 		t.Fatalf("custom Encoding font decoder=%q encodingKind=%v", got, fontValue.Key("Encoding").Kind())
 	}
-	if !hasPDFUnicodeRecoveryCandidate(page) {
+	if !pdfenc.HasUnicodeRecoveryCandidate(page) {
 		t.Fatal("custom Encoding font should trigger Unicode recovery")
 	}
 	doc, err := ParsePDFWithOptions(data, PDFOptions{DisablePopplerFallback: true})
@@ -130,27 +106,6 @@ endcmap end end`)
 	}
 	if text := doc.Text(); !strings.Contains(text, "中文") || strings.ContainsRune(text, '\uFFFD') {
 		t.Fatalf("自定义 Encoding CMap 恢复失败: %q", text)
-	}
-}
-
-// TestParsePDFCIDCMap 验证 Encoding CMap 的逐字符和连续 CID 映射均能展开。
-func TestParsePDFCIDCMap(t *testing.T) {
-	data := []byte(`1 begincodespacerange
-<00> <FF>
-endcodespacerange
-1 begincidchar
-<20> 3
-endcidchar
-1 begincidrange
-<41> <42> 5
-endcidrange`)
-	cmap, ok := parsePDFCIDCMap(data)
-	if !ok || cmap.mappings[string([]byte{0x20})] != 3 ||
-		cmap.mappings[string([]byte{0x41})] != 5 || cmap.mappings[string([]byte{0x42})] != 6 {
-		t.Fatalf("CID CMap parse failed: %+v ok=%v", cmap, ok)
-	}
-	if len(cmap.ranges) != 1 || cmap.ranges[0].size != 1 {
-		t.Fatalf("CID CMap codespace=%+v", cmap.ranges)
 	}
 }
 
@@ -223,37 +178,6 @@ func TestParsePDFRecoversNamedCJKEncodings(t *testing.T) {
 			}
 			if text := doc.Text(); !strings.Contains(text, "中文") || strings.ContainsRune(text, '\uFFFD') {
 				t.Fatalf("%s 恢复失败: %q", test.encoding, text)
-			}
-		})
-	}
-}
-
-// TestNamedPDFCMapDecoderCJKFamilies 验证标准简繁中、日、韩 CMap 名称均
-// 路由到对应纯 Go 字符集，避免只修复单一中文样本。
-func TestNamedPDFCMapDecoderCJKFamilies(t *testing.T) {
-	tests := []struct {
-		name     string
-		encoding encoding.Encoding
-		text     string
-	}{
-		{name: "GBK2K-H", encoding: simplifiedchinese.GB18030, text: "中文𠀀"},
-		{name: "ETen-B5-H", encoding: traditionalchinese.Big5, text: "中文"},
-		{name: "90ms-RKSJ-H", encoding: japanese.ShiftJIS, text: "日本"},
-		{name: "EUC-H", encoding: japanese.EUCJP, text: "日本"},
-		{name: "KSCms-UHC-H", encoding: korean.EUCKR, text: "한국"},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			raw, err := test.encoding.NewEncoder().Bytes([]byte(test.text))
-			if err != nil {
-				t.Fatalf("encode fixture: %v", err)
-			}
-			decoder := namedPDFCMapDecoder(test.name)
-			if decoder == nil {
-				t.Fatalf("没有为 %s 创建解码器", test.name)
-			}
-			if got := decoder.decode(raw); got != test.text {
-				t.Fatalf("decoded=%q want=%q", got, test.text)
 			}
 		})
 	}

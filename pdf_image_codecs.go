@@ -1,51 +1,35 @@
-// pdf_image_codecs.go 补齐 pdfcpu 不支持的 PDF 图片编码的纯 Go 解码：
+// pdf_image_codecs.go 是 PDF 内嵌图片补充解码的编排层：JPEG 2000 与
+// JBIG2 的字节级解码由 internal/pdfenc 提供，这里负责从 pdfcpu 提取结果
+// 中识别对应资产并接入提取流程。
 //
-//  1. JPEG 2000（/Filter /JPXDecode）：pdfcpu 会把原始 codestream 透传为
-//     image/jp2 资产但不解码像素，这里用 go-jpeg2000 解码并重编码 PNG；
-//  2. JBIG2（/Filter /JBIG2Decode）：pdfcpu 直接跳过整张图片，这里在单对象
-//     提取失败后读取原始段流与可选 /JBIG2Globals 全局段，用 gobig2 解码为
-//     灰度 PNG 并构造提取结果。
-//
-// 两条路径失败时均维持既有行为（透传资产或跳过图片），交由整页结构化视觉
-// 兜底，不放大故障面。
+// pdfcpu 不解码这两类编码：JPEG 2000 原始 codestream 被透传为 image/jp2
+// 资产，JBIG2 段流被透传为 image/jbig2 资产，此前均无法进入检索与多模态
+// 链路。任何解码失败都保留原始透传字节，维持整页结构化视觉回退。
 package docparse
 
 import (
-	"bytes"
-	"image/png"
-
-	"github.com/dkrisman/gobig2"
-	"github.com/mrjoshuak/go-jpeg2000"
+	"github.com/unitedrhino/docling/internal/pdfenc"
 	pdfcpumodel "github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
 // decodePDFJPXImage 把 pdfcpu 透传的 JPEG 2000 图片解码为 PNG。仅处理
-// image/jp2 资产；解码失败或像素超出安全上限时原样返回，不影响提取流程。
+// image/jp2 资产；解码失败时原样返回，不影响提取流程。
 func decodePDFJPXImage(decoded pdfExtractedImage) pdfExtractedImage {
 	if decoded.MIMEType != "image/jp2" || len(decoded.Data) == 0 {
 		return decoded
 	}
-	source, err := jpeg2000.Decode(bytes.NewReader(decoded.Data))
-	if err != nil {
+	pngData, ok := pdfenc.DecodeJPEG2000(decoded.Data, pdfMaxExtractDimension)
+	if !ok {
 		return decoded
 	}
-	bounds := source.Bounds()
-	if bounds.Dx() <= 0 || bounds.Dy() <= 0 ||
-		bounds.Dx() > pdfMaxExtractDimension || bounds.Dy() > pdfMaxExtractDimension {
-		return decoded
-	}
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, source); err != nil {
-		return decoded
-	}
-	decoded.Data = buf.Bytes()
+	decoded.Data = pngData
 	decoded.MIMEType = "image/png"
 	return decoded
 }
 
 // decodePDFJBIG2Image 把 pdfcpu 透传的 JBIG2 图片解码为 PNG：段流即提取
 // 资产字节，/JBIG2Globals 全局段从图片对象字典解引用。仅处理 image/jbig2
-// 资产；解码失败或像素超出安全上限时原样返回，不影响提取流程。
+// 资产；解码失败时原样返回，不影响提取流程。
 func decodePDFJBIG2Image(context *pdfcpumodel.Context, objectNumber int, decoded pdfExtractedImage) pdfExtractedImage {
 	if decoded.MIMEType != "image/jbig2" || len(decoded.Data) == 0 {
 		return decoded
@@ -62,24 +46,11 @@ func decodePDFJBIG2Image(context *pdfcpumodel.Context, objectNumber int, decoded
 			}
 		}
 	}
-	decoder, err := gobig2.NewDecoderEmbedded(bytes.NewReader(decoded.Data), globals)
-	if err != nil {
+	pngData, ok := pdfenc.DecodeJBIG2(decoded.Data, globals, pdfMaxExtractDimension)
+	if !ok {
 		return decoded
 	}
-	image, err := decoder.Decode()
-	if err != nil {
-		return decoded
-	}
-	bounds := image.Bounds()
-	if bounds.Dx() <= 0 || bounds.Dy() <= 0 ||
-		bounds.Dx() > pdfMaxExtractDimension || bounds.Dy() > pdfMaxExtractDimension {
-		return decoded
-	}
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, image); err != nil {
-		return decoded
-	}
-	decoded.Data = buf.Bytes()
+	decoded.Data = pngData
 	decoded.MIMEType = "image/png"
 	return decoded
 }

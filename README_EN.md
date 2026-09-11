@@ -1,35 +1,74 @@
-# docparse — Unified Multi-Format Document Parsing in Pure Go
+# docparse — Pure-Go Document Parsing, Ready for Gen-AI
 
 English | [简体中文](README.md)
 
-`docparse` converts PDF, Word, PPT, Excel/CSV, HTML, Markdown, AsciiDoc, EML email, images and plain text documents into a unified **DoclingDocument** structured model (aligned with the Docling Core `1.10.0` official protocol), ready for knowledge bases, RAG chunking, embedding pipelines and AI toolchains.
+> Feed any document to your LLM — a single pure-Go binary, 1–2 orders of magnitude faster, with optional LLM enhancement for the hard pages.
 
-Design goals: **pure Go production baseline with zero external service dependencies**; when higher recognition quality is needed, LLM-based OCR and structured-vision hooks can be attached and applied page by page.
+`docparse` converts PDF, Word, PPT, Excel/CSV, HTML, Markdown, AsciiDoc, EML email, images and plain text into a unified **DoclingDocument** structured model (aligned with the Docling Core `1.10.0` official protocol) — a drop-in document ingestion layer for RAG chunking, embedding pipelines and agent toolchains.
 
-## Features
+## Why docparse
 
-- **Unified protocol**: every format outputs a Docling-compatible `DoclingDocument` (schema 1.10.0), validated against the official Pydantic models
-- **Pure Go parsing**: the default engine needs no external services; PDF font/CMap recovery, multi-column reading order, table structure recovery and Office comments/formulas/charts are all implemented in pure Go
-- **LLM enhancement**: `OCRHook` (verbatim text) and `PDFVisualHook` (structured JSON with bboxes) are routed per page with built-in quality signals, retries and strict validation
-- **Multiple exports**: Docling JSON / content_list / Markdown / HTML
-- **RAG-ready**: hierarchical chunking (Hierarchical/Hybrid) and retrieval chunking (content_list) built in
+The mainstream approach to modern document parsing is a Python model pipeline (e.g. Docling): high quality, but it needs a Python service, loads layout models, and can take tens of seconds per document. **docparse makes a different engineering trade-off**:
+
+- ⚡ **1–2 orders of magnitude faster**: the pure-Go rule engine handles text-based documents in milliseconds to seconds (benchmarks below); ingesting millions of documents no longer requires a GPU fleet
+- 📦 **Single-binary deployment**: pure Go, zero Python, zero external services — `go get` and go; runs equally well in CI, on edge nodes and in embedded settings
+- 🧠 **Modern hybrid architecture**: the rule engine covers structured content, while scanned pages, image tables and formula-dense pages are automatically routed to your LLM page by page (`OCRHook`/`PDFVisualHook`) — spend model tokens where they matter, not on every page
+- 🔒 **Never fabricates**: content the parser is unsure about keeps its raw signal and falls back to vision, instead of guessing a structure
+- 🤝 **Ecosystem compatible**: output is fully aligned with the official Docling protocol, so existing Docling downstream tooling plugs right in
+
+## Benchmarks
+
+Same machine, same real-world PDFs (Apache-2.0 test samples). `docparse` (pure Go, no models) vs Docling `2.x` (CPU model pipeline, timed in-process after warm-up):
+
+| Document | docparse | Docling (CPU) | Speed-up |
+|----------|----------|---------------|----------|
+| Research paper (141 KB, 10 pages) | **0.31s** | 10.5s | **34×** |
+| Technical book (1.2 MB, mixed text & images) | **0.73s** | 111.7s | **153×** |
+
+```mermaid
+xychart-beta
+    title "PDF conversion time (seconds, lower is better)"
+    x-axis ["Paper 141KB", "Book 1.2MB"]
+    y-axis "Time (seconds)" 0 --> 120
+    bar [10.5, 111.7]
+    bar [0.31, 0.73]
+```
+
+> Bar series: Docling (CPU model pipeline) then docparse (pure Go). Docling's time includes layout/table model inference; docparse loads no models at all.
+>
+> **An honest note on quality**: Docling's model pipeline is still the ceiling for complex layouts and image understanding. docparse's strategy is a rule-engine baseline plus LLM enhancement on the pages that need it — the two are complementary, not mutually exclusive.
+
+## Parsing capability comparison
+
+| Capability | docparse (pure Go) | Python Docling | docparse + LLM hooks |
+|------|--------------------|----------------|----------------------|
+| Text-based PDF words with coordinates | ✅ pure Go | ✅ | ✅ |
+| Garbled-font recovery (CJK CMap / embedded fonts) | ✅ pure Go | ✅ | ✅ |
+| Table recovery (ruled / borderless / cross-page merge) | ✅ pure Go | ✅ model | ✅ (image tables via vision) |
+| Multi-column reading order (recursive XY-cut) | ✅ pure Go | ✅ model | ✅ |
+| OCR for scanned pages | ➖ opt-in | ✅ built-in | ✅ OCRHook with any model |
+| Image tables / formula-dense / ambiguous layouts | ➖ vision fallback | ✅ model | ✅ PDFVisualHook per page |
+| Embedded image decoding (JPEG2000/JBIG2/soft masks) | ✅ pure Go | ✅ | ✅ |
+| DOCX/PPTX/XLSX comments·formulas·revisions·charts·SmartArt | ✅ pure Go | ⚠️ partial | ✅ |
+| Output protocol | ✅ Docling 1.10 official JSON | ✅ official | ✅ |
+| Deployment | single binary | Python service + models | single binary + model API |
 
 ## Supported Formats
 
 | Format | Entry functions | Notes |
 |--------|-----------------|-------|
-| Auto-detect by extension | `ParseByExt` / `ParseByExtWithOptions` | Preferred entry when the format is unknown; fills in document name, MIME, low-64-bit SHA-256 hash and origin |
-| PDF | `ParsePDF` / `ParsePDFWithOptions` | CropBox/UserUnit/Rotate normalization, word/line bboxes, ToUnicode/standard CJK/custom Encoding CMap font recovery, embedded bitmaps (incl. JPEG2000/JBIG2/soft masks), strict & borderless table recovery, cross-page table merging, recursive XY-cut; optional Poppler, OCR and structured-vision hooks |
-| Word | `ParseDocx` | Transitional/Strict OOXML, headers/footers, modern comment threads, footnotes/endnotes, tracked changes & fields, text boxes, OMML formulas, images, rich tables, charts and complex Office objects |
-| PPT | `ParsePPTX` | Transitional/Strict OOXML, notes, modern comment threads, layout/master fallback, grouped shapes, visual ordering, charts and complex Office objects |
-| Excel / CSV | `ParseXLSX` / `ParseCSV` | Transitional/Strict OOXML, hidden sheets, threaded comments, raw formulas, pivot tables, images/shapes/SmartArt/OLE, chart sheets, stable ordering and structured tables |
-| HTML | `ParseHTML` | Title/first-heading furniture, flattened headings, image placeholders, inline formatting/links, rich tables |
-| Markdown | `ParseMarkdown` / `ParseMarkdownTable` | Official flattened headings, image placeholders, formatting/links, raw HTML delegation and GFM tables |
-| AsciiDoc | `ParseAsciiDoc` | Heading tree, lists, literal/source blocks, PictureItem image placeholders |
-| EML | `ParseEML` | RFC 5322 headers, best-body selection, common charsets, nested emails and attachment names |
-| Images | `ParseImage` / `ParseImageWithOptions` | PNG/JPEG/BMP/WEBP single-page PictureItem; returns size/DPI without OCR, adds recognition results when configured |
-| Plain text | `ParseText` | UTF-8 BOM and control-character cleanup fallback |
-| Docling JSON | `ParseDoclingDocument` | Parses JSON produced by a Docling service (docling engine) |
+| Auto-detect by extension | `ParseByExt` / `ParseByExtWithOptions` | Preferred entry when the format is unknown; fills in name, MIME, SHA-256 hash and origin |
+| PDF | `ParsePDF` / `ParsePDFWithOptions` | Coordinate normalization, word/line bboxes, font recovery, embedded bitmaps, tables, cross-page merging, recursive XY-cut; optional Poppler, OCR and vision hooks |
+| Word | `ParseDocx` | Transitional/Strict OOXML, comment threads, footnotes/endnotes, tracked changes & fields, OMML formulas, charts and SmartArt/OLE |
+| PPT | `ParsePPTX` | Notes, comment threads, layout/master fallback, grouped shapes, charts and complex Office objects |
+| Excel / CSV | `ParseXLSX` / `ParseCSV` | Hidden sheets, threaded comments, raw formulas, pivot tables, chart sheets |
+| HTML | `ParseHTML` | Furniture, flattened headings, image placeholders, rich tables |
+| Markdown | `ParseMarkdown` | Flattened headings, image placeholders, GFM tables |
+| AsciiDoc | `ParseAsciiDoc` | Heading tree, lists, literal/source blocks |
+| EML | `ParseEML` | RFC 5322 headers, best-body selection, common charsets, attachment names |
+| Images | `ParseImage` | PNG/JPEG/BMP/WEBP; adds recognition results when OCR is configured |
+| Plain text | `ParseText` | BOM and control-character cleanup |
+| Docling JSON | `ParseDoclingDocument` | Parses JSON produced by a Docling service |
 
 ## Quick Start
 
@@ -37,220 +76,77 @@ Design goals: **pure Go production baseline with zero external service dependenc
 go get github.com/unitedrhino/docling
 ```
 
-### 1. Auto-detect by extension (recommended entry)
-
 ```go
-import docparse "github.com/unitedrhino/docling"
-
-doc, err := docparse.ParseByExt("report.docx", data)
-if err != nil { ... }
-// DoclingDocument has no Items field; derive a flat list for knowledge bases.
-items := docparse.ToContentList(doc, docparse.SourceGolight)
-for _, it := range items {
-    text := docparse.ItemToText(it) // extracts text per item type (heading path/table/formula...)
-}
-```
-
-To record a source URI or pass PDF-specific options, use the options entry:
-
-```go
-doc, err := docparse.ParseByExtWithOptions("report.pdf", data, docparse.ParseOptions{
-    OriginURI:       "s3://documents/report.pdf",
-    GarbageThreshold: 0.4,
-    OCRHook: func(req docparse.OCRRequest) (string, error) {
-        // req carries page number, MIME, file name, raw data and existing text.
-        return myOCR(req)
-    },
-})
-```
-
-### 2. Parse a known format directly
-
-Each format exposes a standalone entry point:
-
-```go
-doc, err := docparse.ParseDocx(data)            // Word
-doc, err := docparse.ParseMarkdown(mdData)      // Markdown
-rows := docparse.ParseMarkdownTable(tableMd)    // parse a single Markdown table
-```
-
-### 3. Parse + export Markdown in one call
-
-```go
+// Parse → Markdown in one line
 md, err := docparse.ParseByExtToMarkdown("report.pdf", data)
+
+// Or step by step: get the structured model first
+doc, err := docparse.ParseByExt("report.docx", data)
+items := docparse.ToContentList(doc, docparse.SourceGolight) // flat list for RAG
+chunks := docparse.HierarchicalChunks(doc)                   // official hierarchical semantics
+md := doc.ToMarkdown()
+html := doc.ToHTML()
 ```
 
-### 4. PDF OCR and structured-vision hooks
+### Attach an LLM: modern hybrid parsing
 
 ```go
 doc, err := docparse.ParsePDFWithOptions(data, docparse.PDFOptions{
-    // GarbageThreshold: pages above this garbage ratio trigger OCR; 0 = scanned fallback pages only
-    GarbageThreshold: 0.4,
+    GarbageThreshold: 0.4, // pages above this garbage ratio trigger OCR
     OCRHook: func(req docparse.OCRRequest) (string, error) {
-        return myOCR(req)
+        return myLLMOCR(req) // plug in any OCR / multimodal model
     },
-})
-```
-
-`OCRHook` takes precedence over the compatible `PageOCRHook`. The library strips code fences and
-model disclaimers, rejects empty results, refusals and obvious garbage, and retries once when a
-result is invalid; pages that already contain text only adopt OCR when it is cleaner. Image input
-reuses the same contract; without OCR it still returns a PictureItem carrying size, DPI and a data URI.
-
-Complex pages can attach a structured-vision hook. By default it is called only for scanned,
-garbled, unrecovered-table, formula-dense or column-ambiguous pages; `VisualAlways` explicitly
-covers image-only tables without text signals. Labels, bboxes, confidence floors, text quality,
-heading levels, object dedup, table topology and cell bboxes from the model are strictly
-validated and retried once; valid objects are merged with rule-based text by bbox, and failures
-keep the pure Go/Poppler/OCR result:
-
-```go
-doc, err := docparse.ParsePDFWithOptions(data, docparse.PDFOptions{
-    OCRHook: myOCR,
     VisualHook: func(req docparse.PDFVisualRequest) (docparse.PDFVisualResult, error) {
-        // req.Prompt is the built-in strict JSON prompt; decode the model output into the result struct.
-        return myStructuredVisual(req)
+        // req.Prompt is the built-in strict JSON prompt; decode the model output into the struct.
+        return myStructuredVision(req)
     },
     MaxVisualPages: 20,
 })
 ```
 
-### 5. Content lists and exports
+Hook results are strictly validated (labels, confidence, bboxes, table topology, anti-refusal and
+anti-repetition) with one automatic retry; valid objects are merged with rule text by geometry and
+failures keep the pure-Go result — **model enhancement never breaks existing output**.
 
-```go
-items := docparse.ToContentList(doc, docparse.SourceGolight) // flat list for knowledge bases
-md := doc.ToMarkdown()                                       // export as Markdown (== ExportMarkdown(doc))
-html := doc.ToHTML()                                         // export as a full HTML document (== ExportHTML(doc))
+## examples: real documents, side by side
 
-// Only body is exported by default; select layers to review headers and notes.
-mdWithFurniture := doc.ToMarkdownWithOptions(docparse.ExportOptions{
-    Layers: []docparse.ContentLayer{docparse.LayerBody, docparse.LayerFurniture},
-})
-```
-
-Charts follow the Docling 1.10 protocol and live in `pictures` with `label=picture`; the
-classification and structured data are stored in `meta.classification` and
-`meta.tabular_chart.chart_data`. Chart data prefers the cached values embedded by Office; when
-the cache is missing, XLSX reads the current workbook and DOCX/PPTX read the embedded workbook
-referenced by the chart relationship. Common bar, line, area, pie, doughnut, scatter, radar and
-combo charts render a 960×540, 96 DPI pure Go SVG `ImageRef`; the Markdown/HTML exporters also
-append the chart data as a searchable table. Formulas resolve plain A1 ranges, workbook/sheet
-scoped defined names that resolve to a single A1 range, and `TableName[Column]` structured
-references. The SVG is a semantic preview and does not replicate Office fonts, themes, 3D effects
-or animations; dynamic named formulas, multi-area/qualified structured references and Office 2016
-chart extensions fall back to cached data. A single formula reads at most 100,000 cells.
-
-SmartArt, WordArt, text-bearing shapes and OLE objects also follow `label=picture`: visible text
-joins retrieval via captions and relationship targets are stored in the
-`docparse__office_object_*` extension fields. OLE payloads are recorded only — never executed.
-
-### 6. Hierarchical and knowledge-base chunking
-
-```go
-// Mirrors the official HierarchicalChunker: headings only update context, list groups and
-// tables keep their structure, and no length trimming is applied; each chunk carries the
-// official doc_items plus convenient doc refs, provenance and origin.
-semanticChunks := docparse.HierarchicalChunks(doc)
-
-// Token-aware splitting + same-heading peer merging. CountTokens should match the
-// embedding model; plug in an existing pure Go tokenizer directly.
-hybridChunks := docparse.HybridChunks(doc, docparse.HybridChunkOptions{
-    MaxTokens:   512,
-    CountTokens: embeddingTokenizer.Count,
-})
-
-// Knowledge-base compatible strategy: 900 runes by default, 100 table rows per segment,
-// filtering page headers/footers and tables of contents.
-contentChunks := docparse.ChunkContentList(items, docparse.ContentChunkOptions{})
-```
-
-### 7. Document origin and metadata
-
-The unified entries fill the official `origin`: `filename`, `mimetype`, `binary_hash` and an
-optional `uri`. `DocMeta` is filled best-effort per format:
-
-```go
-doc.Meta.Title     // title (dc:title / email Subject)
-doc.Meta.Author    // author (dc:creator / email From display name)
-doc.Meta.PageCount // pages (PDF pages / pptx slides / xlsx sheets)
-```
-
-## examples: samples paired with converted output
-
-The [`examples/`](examples/) directory ships one pair of files per supported format:
-
-- `sample.<ext>`: a minimal, typical source file
-- `sample.expected.md`: the full expected output of `ParseByExtToMarkdown`
-
-Comparing the two files shows exactly what each format converts to; regression tests keep both
-in sync with the parser:
+[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format,
+including **real-world documents**: a research paper PDF
+([schmager-plateau10.pdf](examples/pdf/schmager-plateau10.pdf), evaluating Go with design
+patterns) and a business pivot workbook ([Book1.xlsx](examples/xlsx/Book1.xlsx), IBM monitor
+sales data).
 
 ```bash
 go test ./... -run TestExamplesGolden            # strict verbatim regression
 go test ./... -run TestExamplesGolden -update    # rebuild the corpus after parser changes
 ```
 
-Read any sample from `examples/` and call `ParseByExtToMarkdown` to reproduce the contents of
-its `sample.expected.md`.
-
-## Docling JSON protocol
-
-- Output is fixed to `schema_name=DoclingDocument`, `version=1.10.0`.
-- Heading levels use the official `level`; `text_level` is only read for compatibility.
-- The top level always contains `body`, `furniture`, `groups`, `texts`, `pictures`, `tables`,
-  `key_value_items`, `form_items` and `pages`; official collections not yet extracted still
-  round-trip losslessly.
-- Content layers support `body`, `furniture`, `background`, `invisible` and `notes`, with
-  `furniture.content_layer` fixed to `furniture`.
-- Legacy `meta`, `caption`, `latex` and `annotations` are readable; on re-serialization they are
-  normalized into official fields, references or node-level `meta`.
-
-## Relationship to Docling and known boundaries
+## Relationship to Docling
 
 The protocol layer is fully aligned with Docling Core `1.10.0` and round-trips official JSON
-losslessly. On parsing quality:
-
-- **Pure Go strengths**: font/garbled-text recovery for text-based PDFs, structured tables,
-  multi-column reading order and structured Office objects (comments/formulas/charts/revisions)
-  — none of these need a model to produce structured output
-- **Model-enhanced**: OCR for scanned pages, image tables, complex merged cells, formula-dense
-  pages and column-ambiguous pages — attach `OCRHook`/`VisualHook` and they are enhanced per page
-- **Known conservative fallbacks** (results are never fabricated): CCITT K>0 (Group 3 2D)
-  compression, real ICC color management, soft-mask Matte semantics, pixel-level layout
-  segmentation and vector graphics semantics — such content keeps its raw signal and enters the
-  optional vision path
-- Without any model configured, the pure Go path still emits fully structured documents; text
-  recognition for scanned pages requires OCR
+losslessly; chunking mirrors the official HierarchicalChunker/HybridChunker. **Known conservative
+boundaries** (results are never fabricated): CCITT K>0 compression, real ICC color management,
+soft-mask Matte, pixel-level layout segmentation and vector graphics semantics keep their raw
+signal and enter the optional vision path; text recognition for scanned pages requires OCR.
 
 ## Repository layout
 
 ```
 docling/
-├── docparse.go     # unified model and facade: Item, ParseByExt, ParseByExtToMarkdown, item tools
-├── docling.go      # DoclingDocument model (TextItem/TableItem/PageItem/DocMeta etc.)
-├── doclingserve.go # Docling service parsing (optional second engine)
-├── contentlist.go  # ToContentList (knowledge-base content list)
-├── chunker.go      # HierarchicalChunks (official hierarchical semantics)
-├── hybrid_chunker.go # HybridChunks (token-aware splitting, header repetition, peer merging)
-├── content_chunk.go # ChunkContentList (knowledge-base length/table/multimodal strategy)
-├── export.go       # ExportMarkdown / ToMarkdown
-├── export_html.go  # ExportHTML / ToHTML
-├── media.go        # OOXML shared: media data URIs, docProps/core.xml metadata
-├── ooxml_chart*.go # OOXML charts: classification, formula backfill, tabular data, pure Go SVG preview
-├── ooxml_strict.go # in-memory Strict → Transitional OOXML normalization
-├── office_comment.go # OOXML comments and reply chains
-├── office_object*.go # SmartArt/WordArt/shapes/OLE semantic mapping and SVG preview
-├── ocr.go          # OCRRequest/OCRHook, compatible PageOCRHook and quality fallback
-├── pdf*.go         # PDF parsing: text/layout/tables/Unicode recovery/image decoding/vision routing/optional Poppler
-├── docx*.go pptx.go sheet.go # Word/PPT/Excel parsing
-├── html.go markdown.go asciidoc.go eml.go image.go text.go table.go # remaining formats
-├── examples/       # per-format sample sources paired with expected Markdown output
-└── *_test.go       # unit/benchmark/dual-engine/official schema validation tests
+├── docparse.go          # facade: Item, ParseByExt, ParseByExtToMarkdown
+├── docling.go           # DoclingDocument model (official protocol)
+├── doclingserve.go      # Docling service parsing (optional second engine)
+├── export*.go           # Markdown / HTML exporters
+├── contentlist.go       # ToContentList (RAG content list)
+├── chunker.go hybrid_chunker.go content_chunk.go # three chunking strategies
+├── pdf*.go              # PDF: text/layout/tables/vision routing/image orchestration
+├── docx*.go pptx.go sheet.go # Word / PPT / Excel parsing
+├── html.go markdown.go asciidoc.go eml.go image.go text.go table.go
+├── internal/pdfenc/     # PDF byte-encoding layer: ToUnicode/CMap/SFNT recovery, JPX/JBIG2 decoding, soft-mask alpha
+├── internal/ooxml/      # Strict OOXML → Transitional normalization
+├── examples/            # per-format sample sources paired with expected Markdown
+└── *_test.go            # unit/end-to-end/official schema validation tests
 ```
-
-The package follows a **single package + narrow public interface** design: only the format
-entries, unified model and content tools are public API; text cleanup, table escaping/rendering
-and PDF line classification are unexported implementation details.
 
 ## Dependencies & acknowledgements
 
@@ -260,7 +156,7 @@ and PDF line classification are unexported implementation details.
 - [go-jpeg2000](https://github.com/mrjoshuak/go-jpeg2000) (Apache-2.0) — pure Go JPEG 2000 decoding
 - [gobig2](https://github.com/dkrisman/gobig2) (Apache-2.0) — pure Go JBIG2 decoding
 - [goldmark](https://github.com/yuin/goldmark) (MIT), [golang.org/x/net](https://pkg.go.dev/golang.org/x/net), [golang.org/x/text](https://pkg.go.dev/golang.org/x/text), [golang.org/x/image](https://pkg.go.dev/golang.org/x/image)
-- [Docling](https://github.com/DS4SD/docling) (MIT) — reference for the output protocol and chunking semantics
+- [Docling](https://github.com/docling-project/docling) (MIT) — reference for the output protocol and chunking semantics
 
 ## License
 

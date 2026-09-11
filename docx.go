@@ -58,6 +58,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/unitedrhino/docling/internal/ooxml"
 )
 
 // OOXML 命名空间 URL（按 Space 精确识别的元素才区分归属）。
@@ -83,7 +85,7 @@ const (
 // （手工加粗/大字号短段重判为标题，超出 Docling msword 后端的增强）。
 func ParseDocx(data []byte) (*DoclingDocument, error) {
 	var err error
-	data, err = normalizeStrictOOXMLPackage(data)
+	data, err = ooxml.NormalizeStrictOOXMLPackage(data)
 	if err != nil {
 		return nil, fmt.Errorf("docparse: 归一化 Strict DOCX 失败: %w", err)
 	}

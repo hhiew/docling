@@ -50,46 +50,67 @@ func examplesSources() []examplesSource {
 	}
 }
 
-// TestExamplesGolden 对 examples/ 对照集做端到端回归：样例源文件经
-// ParseByExtToMarkdown 的输出必须与 sample.expected.md 逐字一致。
+// TestExamplesGolden 对 examples/ 对照集做端到端回归：目录中每个样例源
+// 文件（sample.<ext> 及其他真实样本）经 ParseByExtToMarkdown 的输出必须与
+// 同名 <name>.expected.md 逐字一致。canonical 的 sample.<ext> 在 -update
+// 模式下由代码构造器重建；随后追加的真实样本（如研究论文、业务工作簿）
+// 只重建期望输出，源文件保持原样以展示真实文档的转换效果。
 func TestExamplesGolden(t *testing.T) {
 	for _, source := range examplesSources() {
 		t.Run(source.dir, func(t *testing.T) {
 			dir := filepath.Join("examples", source.dir)
-			sourcePath := filepath.Join(dir, source.filename)
-			expectedPath := filepath.Join(dir, "sample.expected.md")
-			if *updateExamples {
-				if err := os.MkdirAll(dir, 0o755); err != nil {
-					t.Fatalf("create examples dir: %v", err)
-				}
-				data := source.build(t)
-				if err := os.WriteFile(sourcePath, data, 0o644); err != nil {
-					t.Fatalf("write sample source: %v", err)
-				}
-				markdown, err := ParseByExtToMarkdown(source.filename, data)
-				if err != nil {
-					t.Fatalf("parse sample: %v", err)
-				}
-				if err := os.WriteFile(expectedPath, []byte(markdown), 0o644); err != nil {
-					t.Fatalf("write expected markdown: %v", err)
-				}
-				return
-			}
-			data, err := os.ReadFile(sourcePath)
+			entries, err := os.ReadDir(dir)
 			if err != nil {
-				t.Fatalf("读取样例失败（首次使用请先运行 go test -run TestExamplesGolden -update 生成）: %v", err)
+				if os.IsNotExist(err) && *updateExamples {
+					if mkErr := os.MkdirAll(dir, 0o755); mkErr != nil {
+						t.Fatalf("create examples dir: %v", mkErr)
+					}
+					entries = nil
+				} else {
+					t.Fatalf("read examples dir: %v", err)
+				}
 			}
-			markdown, err := ParseByExtToMarkdown(source.filename, data)
-			if err != nil {
-				t.Fatalf("解析样例: %v", err)
-			}
-			expected, err := os.ReadFile(expectedPath)
-			if err != nil {
-				t.Fatalf("读取期望输出失败: %v", err)
-			}
-			if string(markdown) != string(expected) {
-				t.Fatalf("Markdown 输出与期望不一致，解析器行为可能发生变化；\n确认无误后运行 go test -run TestExamplesGolden -update 刷新对照集。\n--- 首处差异 ---\n%s",
-					firstLineDiff(string(expected), string(markdown)))
+			for _, entry := range entries {
+				name := entry.Name()
+				if entry.IsDir() || strings.HasSuffix(name, ".expected.md") ||
+					!strings.HasSuffix(name, "."+strings.TrimPrefix(source.filename, "sample.")) {
+					continue
+				}
+				ext := filepath.Ext(name)
+				expectedPath := filepath.Join(dir, strings.TrimSuffix(name, ext)+".expected.md")
+				data, readErr := os.ReadFile(filepath.Join(dir, name))
+				if readErr != nil {
+					t.Fatalf("读取样例失败: %v", readErr)
+				}
+				if *updateExamples {
+					if name == source.filename {
+						fresh := source.build(t)
+						if err := os.WriteFile(filepath.Join(dir, name), fresh, 0o644); err != nil {
+							t.Fatalf("write sample source: %v", err)
+						}
+						data = fresh
+					}
+					markdown, parseErr := ParseByExtToMarkdown(name, data)
+					if parseErr != nil {
+						t.Fatalf("解析 %s: %v", name, parseErr)
+					}
+					if err := os.WriteFile(expectedPath, []byte(markdown), 0o644); err != nil {
+						t.Fatalf("write expected markdown: %v", err)
+					}
+					continue
+				}
+				markdown, parseErr := ParseByExtToMarkdown(name, data)
+				if parseErr != nil {
+					t.Fatalf("解析样例 %s: %v", name, parseErr)
+				}
+				expected, readErr := os.ReadFile(expectedPath)
+				if readErr != nil {
+					t.Fatalf("读取期望输出失败: %v", readErr)
+				}
+				if string(markdown) != string(expected) {
+					t.Fatalf("%s 的 Markdown 输出与期望不一致，解析器行为可能发生变化；\n确认无误后运行 go test -run TestExamplesGolden -update 刷新对照集。\n--- 首处差异 ---\n%s",
+						name, firstLineDiff(string(expected), string(markdown)))
+				}
 			}
 		})
 	}

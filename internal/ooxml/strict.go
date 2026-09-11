@@ -1,7 +1,7 @@
-// ooxml_strict.go 实现 DOCX/PPTX/XLSX 共用的 Strict OOXML 命名空间
+// strict.go 实现 DOCX/PPTX/XLSX 共用的 Strict OOXML 命名空间
 // 归一化。仅当根关系部件明确使用 ISO Strict URI 时才重写 XML；普通
 // Transitional 包原样返回，媒体等二进制条目按压缩数据直接复制。
-package docparse
+package ooxml
 
 import (
 	"archive/zip"
@@ -45,12 +45,12 @@ var strictOOXMLNamespaceOverrides = map[string]string{
 // normalizeStrictOOXMLPackage 检测并把 Strict OOXML 包转换为当前解析器及
 // excelize 可消费的 Transitional URI。返回值在普通包上复用原始切片；
 // Strict 包的 ZIP 路径或体积越界时返回错误，不尝试带风险的降级解析。
-func normalizeStrictOOXMLPackage(data []byte) ([]byte, error) {
+func NormalizeStrictOOXMLPackage(data []byte) ([]byte, error) {
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		return nil, err
 	}
-	strict, err := isStrictOOXMLPackage(reader)
+	strict, err := IsStrictOOXMLPackage(reader)
 	if err != nil || !strict {
 		return data, err
 	}
@@ -106,7 +106,7 @@ func normalizeStrictOOXMLPackage(data []byte) ([]byte, error) {
 }
 
 // isStrictOOXMLPackage 只读取根关系部件的有界前缀识别 Strict URI。
-func isStrictOOXMLPackage(reader *zip.Reader) (bool, error) {
+func IsStrictOOXMLPackage(reader *zip.Reader) (bool, error) {
 	for _, file := range reader.File {
 		if file.Name != strictOOXMLRootRelationships {
 			continue

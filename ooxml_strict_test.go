@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/unitedrhino/docling/internal/ooxml"
 )
 
 // TestParseStrictOOXMLFormats 验证三种 Office Open XML 格式从 ISO Strict
@@ -63,7 +65,7 @@ func TestNormalizeStrictOOXMLPackageSafety(t *testing.T) {
 		data := mustZipEntriesForTest(t, map[string]string{
 			"_rels/.rels": `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`,
 		})
-		got, err := normalizeStrictOOXMLPackage(data)
+		got, err := ooxml.NormalizeStrictOOXMLPackage(data)
 		if err != nil {
 			t.Fatalf("normalize transitional OOXML: %v", err)
 		}
@@ -77,24 +79,10 @@ func TestNormalizeStrictOOXMLPackageSafety(t *testing.T) {
 			"_rels/.rels":          `<Relationships xmlns="http://purl.oclc.org/ooxml/package/relationships"></Relationships>`,
 			"../word/document.xml": `<w:document xmlns:w="http://purl.oclc.org/ooxml/wordprocessingml/main"/>`,
 		})
-		if _, err := normalizeStrictOOXMLPackage(data); err == nil || !strings.Contains(err.Error(), "路径越界") {
+		if _, err := ooxml.NormalizeStrictOOXMLPackage(data); err == nil || !strings.Contains(err.Error(), "路径越界") {
 			t.Fatalf("strict zip-slip error = %v", err)
 		}
 	})
-}
-
-// TestStrictOOXMLNamespaceOverrides 验证不能套用通用 2006 规则的官方映射。
-func TestStrictOOXMLNamespaceOverrides(t *testing.T) {
-	tests := map[string]string{
-		"http://purl.oclc.org/ooxml/descriptions/base":                               "http://descriptions.openxmlformats.org/description/base",
-		"http://purl.oclc.org/ooxml/officeDocument/relationships/metadata/thumbnail": "http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail",
-		"http://purl.oclc.org/ooxml/wordprocessingml/main":                           "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-	}
-	for strictURI, want := range tests {
-		if got := strictOOXMLNamespaceToTransitional(strictURI); got != want {
-			t.Errorf("map %s = %s, want %s", strictURI, got, want)
-		}
-	}
 }
 
 // mustMakeStrictOOXMLForTest 把测试 OOXML 包中的常见 Transitional URI

@@ -37,6 +37,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/unitedrhino/docling/internal/ooxml"
 )
 
 // pptx OOXML 关系命名空间与关键部件路径。
@@ -134,7 +136,7 @@ type pptxTable struct {
 // slide 集合为空时返回元素为空的文档（不视为错误）。
 func ParsePPTX(data []byte) (*DoclingDocument, error) {
 	var err error
-	data, err = normalizeStrictOOXMLPackage(data)
+	data, err = ooxml.NormalizeStrictOOXMLPackage(data)
 	if err != nil {
 		return nil, fmt.Errorf("docparse: 归一化 Strict PPTX 失败: %w", err)
 	}
