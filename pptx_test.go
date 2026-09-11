@@ -1,4 +1,4 @@
-package docparse
+package docling
 
 import (
 	"archive/zip"

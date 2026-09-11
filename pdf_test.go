@@ -3,7 +3,7 @@
 // 覆盖标题启发式与层级父挂接、正文元素 prov（页号/BOTTOMLEFT bbox/charspan）、
 // 页面尺寸登记（含负偏移 MediaBox）、扫描件兜底（无 prov text、全空文档报错）、
 // 单页超长正文分段与 prov bbox 并集。
-package docparse
+package docling
 
 import (
 	"encoding/json"

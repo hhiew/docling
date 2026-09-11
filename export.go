@@ -4,7 +4,7 @@
 //
 // 层级口径：标题以 TextLevel 优先（语义层级）；TextLevel 缺失时按树深度。
 // 列表：list_item 带 Marker（"1."）用之，否则无序 "-"；嵌套按树深度缩进。
-package docparse
+package docling
 
 import (
 	"fmt"

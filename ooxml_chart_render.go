@@ -1,7 +1,7 @@
 // ooxml_chart_render.go 把结构化 OOXML 图表数据渲染为内嵌 SVG ImageRef。
 // 渲染器覆盖柱状、折线、面积、饼图、圆环、散点和雷达等常见系列；未知
 // 类型输出带标题与数据摘要的稳定占位图。实现仅使用 Go 标准库。
-package docparse
+package docling
 
 import (
 	"encoding/base64"

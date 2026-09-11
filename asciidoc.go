@@ -1,5 +1,5 @@
 // asciidoc.go 用逐行状态机把 AsciiDoc 文本解析为 DoclingDocument，
-// 是 docparse 通用组件的 AsciiDoc 后端。
+// 是 docling 通用组件的 AsciiDoc 后端。
 // 标题/列表/表格/字面块/图片/注释/段落语义复刻 docling 的 asciidoc_backend.py
 // （docling 同样不依赖第三方 asciidoc 解析库，为纯逐行状态机）；
 // 按任务约定补充/偏离的点（均已在对应位置注释说明）：
@@ -8,7 +8,7 @@
 //     每个 "|" 之前（docling 仅剥行首/空白后装饰、剥后即弃，任务要求保留表头语义）；
 //   - 标题作为后续内容的父节点（层级父栈模式），使 content_list 携带章节路径；
 //     prov 全空不生成。
-package docparse
+package docling
 
 import (
 	"regexp"

@@ -1,5 +1,5 @@
 // pdf_visual_test.go 验证 PDF 页面质量路由、视觉结果强校验与区域去重合并。
-package docparse
+package docling
 
 import (
 	"errors"

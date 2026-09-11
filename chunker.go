@@ -1,7 +1,7 @@
 // chunker.go 实现 DoclingDocument 的官方层级语义分块：标题只作为上下文，
 // 普通文档元素各自成块，连续列表按 ListGroup 整体序列化，表格保持 GFM
 // Markdown 结构。该分块器不做长度裁剪，检索尺寸策略由 ContentChunk 适配器负责。
-package docparse
+package docling
 
 import (
 	"encoding/json"

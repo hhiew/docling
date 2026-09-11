@@ -6,7 +6,7 @@
 //   - parseOOXMLCoreProps 解析 docProps/core.xml 为文档级元数据 DocMeta。
 //
 // 三个 OOXML 后端（docx/pptx/xlsx）共用，避免各后端重复实现。
-package docparse
+package docling
 
 import (
 	"archive/zip"

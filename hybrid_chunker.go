@@ -1,7 +1,7 @@
 // hybrid_chunker.go 在层级语义分块之上实现 token 感知的二次切分与合并。
 // 调用方可注入与向量模型一致的纯 Go tokenizer 计数函数；未注入时使用
 // rune 数作为保守上限，不引入 Python、模型文件或外部服务依赖。
-package docparse
+package docling
 
 import (
 	"encoding/json"

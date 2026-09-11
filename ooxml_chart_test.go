@@ -1,6 +1,6 @@
 // ooxml_chart_test.go 验证 Office Open XML 图表缓存到官方 PictureItem
 // 元数据的转换，覆盖柱状图、折线图和饼图的分类、标题与表格化数据。
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -129,7 +129,7 @@ func TestParseOOXMLChartCombo(t *testing.T) {
 	assertChartTable(t, meta.TabularChart.ChartData, [][]string{
 		{"类别", "销量", "利润"}, {"一月", "10", "3"}, {"二月", "20", "7"},
 	})
-	if got := string(meta.Extra["docparse__chart_series_types"]); got != `["bar_chart","line_chart"]` {
+	if got := string(meta.Extra["docling__chart_series_types"]); got != `["bar_chart","line_chart"]` {
 		t.Fatalf("combo series types = %s", got)
 	}
 	image := renderOOXMLChartSVG(meta)
@@ -200,7 +200,7 @@ func TestParseOOXMLChartComboScatter(t *testing.T) {
 		{"一月", "10", "4", "3"},
 		{"二月", "20", "8", "7"},
 	})
-	if got := string(meta.Extra["docparse__chart_series_types"]); got != `["bar_chart","scatter_chart"]` {
+	if got := string(meta.Extra["docling__chart_series_types"]); got != `["bar_chart","scatter_chart"]` {
 		t.Fatalf("combo series types = %s", got)
 	}
 }

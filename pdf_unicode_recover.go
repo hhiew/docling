@@ -1,6 +1,6 @@
 // pdf_unicode_recover.go 承接 Unicode 恢复的版面编排层：判断页面是否值得
 // 恢复、执行恢复并与既有文本行按乱码率择优。字节级字符映射见 internal/pdfenc。
-package docparse
+package docling
 
 import (
 	"strings"

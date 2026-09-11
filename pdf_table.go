@@ -1,7 +1,7 @@
 // pdf_table.go 基于 PDF 词级坐标恢复保守的矩形表格网格，并从后续正文流移除
 // 已消费的表格行。识别只接受至少两行两列且列起点稳定的连续区域，避免把普通
 // 双栏长正文当成表格。
-package docparse
+package docling
 
 import (
 	"math"

@@ -1,4 +1,4 @@
-package docparse
+package docling
 
 // doclingserve.go —— docling-serve HTTP 服务统一入口。
 // 把「调用 docling-serve 解析文档 → 得到 DoclingDocument」的能力下沉到本组件，
@@ -91,7 +91,7 @@ type DoclingPageInfo struct {
 // HealthCheckDoclingService 检查 docling-serve 服务是否可达（启动预热与运行时探测）。
 func HealthCheckDoclingService(ctx context.Context, opts DoclingServiceOptions) error {
 	if opts.baseURL() == "" {
-		return fmt.Errorf("docparse: docling service url is empty")
+		return fmt.Errorf("docling: docling service url is empty")
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, opts.baseURL()+"/health", nil)
 	if err != nil {
@@ -104,7 +104,7 @@ func HealthCheckDoclingService(ctx context.Context, opts DoclingServiceOptions) 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("docparse: docling health check returned status %d", resp.StatusCode)
+		return fmt.Errorf("docling: docling health check returned status %d", resp.StatusCode)
 	}
 	return nil
 }
@@ -113,10 +113,10 @@ func HealthCheckDoclingService(ctx context.Context, opts DoclingServiceOptions) 
 // 与 golight 各 ParseXxx 并列：复杂版面/扫描件/中文正式文档建议走本入口（质量显著优于规则提取）。
 func ParseWithDoclingService(ctx context.Context, docName string, data []byte, opts DoclingServiceOptions) (*DoclingDocument, *DoclingServeResult, error) {
 	if opts.baseURL() == "" {
-		return nil, nil, fmt.Errorf("docparse: docling service url is empty")
+		return nil, nil, fmt.Errorf("docling: docling service url is empty")
 	}
 	if len(data) == 0 {
-		return nil, nil, fmt.Errorf("docparse: empty file data")
+		return nil, nil, fmt.Errorf("docling: empty file data")
 	}
 
 	endpoint := opts.baseURL() + "/v1/convert/file"
@@ -135,7 +135,7 @@ func ParseWithDoclingService(ctx context.Context, docName string, data []byte, o
 			}
 		}
 	}
-	return nil, nil, fmt.Errorf("docparse: docling parse failed after %d retries: %w", opts.retry(), lastErr)
+	return nil, nil, fmt.Errorf("docling: docling parse failed after %d retries: %w", opts.retry(), lastErr)
 }
 
 // doParseWithDoclingService 单次提交解析请求。
@@ -176,7 +176,7 @@ func doParseWithDoclingService(ctx context.Context, endpoint, docName string, da
 		return nil, nil, err
 	}
 	if httpResp.StatusCode != http.StatusOK {
-		return nil, nil, fmt.Errorf("docparse: docling returned status %d: %s", httpResp.StatusCode, string(respBody))
+		return nil, nil, fmt.Errorf("docling: docling returned status %d: %s", httpResp.StatusCode, string(respBody))
 	}
 
 	// docling-serve /v1/convert/file 响应：{status, processing_time, document:{json_content}, errors}
@@ -192,7 +192,7 @@ func doParseWithDoclingService(ctx context.Context, endpoint, docName string, da
 		return nil, nil, err
 	}
 	if serveResp.Status != "success" {
-		return nil, nil, fmt.Errorf("docparse: docling status=%s errors=%v", serveResp.Status, serveResp.Errors)
+		return nil, nil, fmt.Errorf("docling: docling status=%s errors=%v", serveResp.Status, serveResp.Errors)
 	}
 
 	doc, err := ParseDoclingDocument(serveResp.Document.JSONContent)

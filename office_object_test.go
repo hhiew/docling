@@ -1,5 +1,5 @@
 // office_object_test.go 验证 OOXML 复杂对象统一映射到官方 PictureItem。
-package docparse
+package docling
 
 import (
 	"archive/zip"
@@ -52,7 +52,7 @@ func TestParseDocxComplexOfficeObjects(t *testing.T) {
 		}
 	}
 	var target string
-	if err := json.Unmarshal(doc.Pictures[2].Meta.Extra["docparse__office_object_target"], &target); err != nil || target != "word/embeddings/sheet1.xlsx" {
+	if err := json.Unmarshal(doc.Pictures[2].Meta.Extra["docling__office_object_target"], &target); err != nil || target != "word/embeddings/sheet1.xlsx" {
 		t.Fatalf("OLE target=%q err=%v", target, err)
 	}
 	validateDocumentWithDoclingCore110ForTest(t, "docx-complex-office-objects", doc)

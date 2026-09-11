@@ -5,11 +5,11 @@
 // pdfcpu 不解码这两类编码：JPEG 2000 原始 codestream 被透传为 image/jp2
 // 资产，JBIG2 段流被透传为 image/jbig2 资产，此前均无法进入检索与多模态
 // 链路。任何解码失败都保留原始透传字节，维持整页结构化视觉回退。
-package docparse
+package docling
 
 import (
-	"github.com/unitedrhino/docling/internal/pdfenc"
 	pdfcpumodel "github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/unitedrhino/docling/internal/pdfenc"
 )
 
 // decodePDFJPXImage 把 pdfcpu 透传的 JPEG 2000 图片解码为 PNG。仅处理

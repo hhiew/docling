@@ -1,5 +1,5 @@
 // pdf_image_test.go 验证 PDF 内嵌图片的纯 Go 版面感知与视觉增强自动路由。
-package docparse
+package docling
 
 import (
 	"bytes"

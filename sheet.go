@@ -32,7 +32,7 @@
 // 由 contentlist.go 的 ToContentList 统一简化；解析层不再按行数拆分大表
 // （分段语义下沉至知识库切片层）；空内容返回空文档不报错，与 markdown.go
 // 样板一致，由调用方决定回退。
-package docparse
+package docling
 
 import (
 	"archive/zip"
@@ -55,9 +55,9 @@ import (
 
 const (
 	// xlsxFormulaMetaKey 在富单元格引用中保存原始 Excel 公式。
-	xlsxFormulaMetaKey = "docparse__xlsx_formula"
+	xlsxFormulaMetaKey = "docling__xlsx_formula"
 	// xlsxPivotTableMetaKey 在表格节点中保存数据透视表定义。
-	xlsxPivotTableMetaKey = "docparse__xlsx_pivot_table"
+	xlsxPivotTableMetaKey = "docling__xlsx_pivot_table"
 	// xlsxSharedFormulaPlaceholder 明确标记无法从损坏工作簿展开的共享公式。
 	xlsxSharedFormulaPlaceholder = "SHARED_FORMULA"
 )
@@ -210,7 +210,7 @@ func ParseXLSX(data []byte) (*DoclingDocument, error) {
 	var err error
 	data, err = ooxml.NormalizeStrictOOXMLPackage(data)
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 归一化 Strict XLSX 失败: %w", err)
+		return nil, fmt.Errorf("docling: 归一化 Strict XLSX 失败: %w", err)
 	}
 	f, err := excelize.OpenReader(bytes.NewReader(data))
 	if err != nil {
@@ -738,11 +738,11 @@ func convertXLSXChartSheet(doc *DoclingDocument, workbook *excelize.File, reader
 func fallbackXLSXChartMeta(title string) *PictureMeta {
 	return &PictureMeta{
 		Classification: &PictureClassificationMetaField{Predictions: []PictureClassificationPrediction{{
-			PredictionMeta: PredictionMeta{CreatedBy: "docparse-xlsx"},
+			PredictionMeta: PredictionMeta{CreatedBy: "docling-xlsx"},
 			ClassName:      "chart",
 		}}},
 		TabularChart: &TabularChartMetaField{
-			PredictionMeta: PredictionMeta{CreatedBy: "docparse-xlsx"},
+			PredictionMeta: PredictionMeta{CreatedBy: "docling-xlsx"},
 			Title:          title,
 			ChartData:      &TableData{TableCells: []DoclingTableCell{}, Orientation: TableOrientation0},
 		},
@@ -864,8 +864,8 @@ func appendXLSXComments(doc *DoclingDocument, f *excelize.File, sheetName string
 		doc.Texts[ref.Idx].ContentLayer = noteLayer
 		doc.Texts[ref.Idx].Meta = BaseMeta{}
 		for key, value := range map[string]string{
-			"docparse__xlsx_cell":   comment.Cell,
-			"docparse__xlsx_author": comment.Author,
+			"docling__xlsx_cell":   comment.Cell,
+			"docling__xlsx_author": comment.Author,
 		} {
 			if raw, marshalErr := json.Marshal(value); marshalErr == nil {
 				doc.Texts[ref.Idx].Meta[key] = raw

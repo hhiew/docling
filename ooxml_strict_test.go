@@ -1,6 +1,6 @@
 // ooxml_strict_test.go 验证 Strict OOXML 命名空间在纯 Go 路径中统一
 // 归一化，确保 DOCX 公式、PPTX 幻灯片关系和 XLSX 工作表不会静默丢失。
-package docparse
+package docling
 
 import (
 	"archive/zip"

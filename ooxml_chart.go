@@ -4,7 +4,7 @@
 //
 // 本实现只读取 OOXML 包内已有 XML/缓存，不调用 LibreOffice 或其他外部程序；
 // 公式引用没有缓存值时，由调用方提供的工作簿解析器回填数据。
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 
 // ooxmlChartSeriesTypesMetaKey 保存组合图中与结构化数据列一一对应的原始
 // 系列图表类型，供纯 Go 语义预览恢复柱形/折线差异。
-const ooxmlChartSeriesTypesMetaKey = "docparse__chart_series_types"
+const ooxmlChartSeriesTypesMetaKey = "docling__chart_series_types"
 
 // ooxmlChartClassByElement 把 DrawingML 图表元素映射为图片分类名称。
 var ooxmlChartClassByElement = map[string]string{
@@ -196,11 +196,11 @@ func parseOOXMLChartWithResolver(data []byte, resolver ooxmlChartFormulaResolver
 	confidence := 1.0
 	meta := &PictureMeta{
 		Classification: &PictureClassificationMetaField{Predictions: []PictureClassificationPrediction{{
-			PredictionMeta: PredictionMeta{Confidence: &confidence, CreatedBy: "docparse-ooxml"},
+			PredictionMeta: PredictionMeta{Confidence: &confidence, CreatedBy: "docling-ooxml"},
 			ClassName:      className,
 		}}},
 		TabularChart: &TabularChartMetaField{
-			PredictionMeta: PredictionMeta{Confidence: &confidence, CreatedBy: "docparse-ooxml"},
+			PredictionMeta: PredictionMeta{Confidence: &confidence, CreatedBy: "docling-ooxml"},
 			Title:          title,
 			ChartData:      buildOOXMLChartTable(series, seriesTypes, resolver),
 		},

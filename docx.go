@@ -41,7 +41,7 @@
 //
 // 文本抽取保留流式状态机口径：w:t 文本、w:tab→\t、w:br→\n。
 // 内容为空时返回元素为空的文档（不视为错误）；畸形 zip/xml 返回 error。
-package docparse
+package docling
 
 import (
 	"archive/zip"
@@ -71,9 +71,9 @@ const (
 	// wordW14NS Word 2010 扩展命名空间（w14:checkbox）。
 	wordW14NS = "http://schemas.microsoft.com/office/word/2010/wordml"
 	// wordRevisionsMetaKey 保存 Word 修订记录，不改变当前接受视图文本。
-	wordRevisionsMetaKey = "docparse__word_revisions"
+	wordRevisionsMetaKey = "docling__word_revisions"
 	// wordFieldsMetaKey 保存 Word 域指令，正文仍使用文档内缓存的显示结果。
-	wordFieldsMetaKey = "docparse__word_fields"
+	wordFieldsMetaKey = "docling__word_fields"
 )
 
 // ParseDocx 解析 docx（zip 打包的 WordprocessingML）为 DoclingDocument。
@@ -87,7 +87,7 @@ func ParseDocx(data []byte) (*DoclingDocument, error) {
 	var err error
 	data, err = ooxml.NormalizeStrictOOXMLPackage(data)
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 归一化 Strict DOCX 失败: %w", err)
+		return nil, fmt.Errorf("docling: 归一化 Strict DOCX 失败: %w", err)
 	}
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {

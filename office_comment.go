@@ -1,6 +1,6 @@
 // office_comment.go 定义 Office 协作批注在 Docling 节点 meta 中的稳定扩展键，
 // 并集中完成作者、回复、时间和解决状态的 JSON 编码。
-package docparse
+package docling
 
 import (
 	"encoding/json"
@@ -8,23 +8,23 @@ import (
 )
 
 const (
-	commentMetaID         = "docparse__comment_id"          // 批注或回复的源文件标识。
-	commentMetaParentID   = "docparse__comment_parent_id"   // 回复所指向的父批注标识。
-	commentMetaAuthorID   = "docparse__comment_author_id"   // OOXML 作者/人员标识。
-	commentMetaAuthor     = "docparse__comment_author"      // 作者显示名称。
-	commentMetaInitials   = "docparse__comment_initials"    // 作者缩写。
-	commentMetaUserID     = "docparse__comment_user_id"     // Office 协作用户标识。
-	commentMetaProviderID = "docparse__comment_provider_id" // 人员信息提供方标识。
-	commentMetaCreated    = "docparse__comment_created"     // OOXML 原始创建时间。
-	commentMetaStatus     = "docparse__comment_status"      // active/resolved/closed 等源状态。
-	commentMetaResolved   = "docparse__comment_resolved"    // 归一化后的是否已解决状态。
-	commentMetaCell       = "docparse__comment_cell"        // XLSX 批注锚定单元格。
-	commentMetaMentions   = "docparse__comment_mentions"    // XLSX 批注内提及人员及字符范围。
-	commentMetaAssignedTo = "docparse__comment_assigned_to" // PPTX 任务型批注的负责人列表。
-	commentMetaStartDate  = "docparse__comment_start_date"  // PPTX 任务型批注开始时间。
-	commentMetaDueDate    = "docparse__comment_due_date"    // PPTX 任务型批注截止时间。
-	commentMetaCompletion = "docparse__comment_completion"  // PPTX 任务型批注完成比例。
-	commentMetaTitle      = "docparse__comment_title"       // PPTX 任务型批注标题。
+	commentMetaID         = "docling__comment_id"          // 批注或回复的源文件标识。
+	commentMetaParentID   = "docling__comment_parent_id"   // 回复所指向的父批注标识。
+	commentMetaAuthorID   = "docling__comment_author_id"   // OOXML 作者/人员标识。
+	commentMetaAuthor     = "docling__comment_author"      // 作者显示名称。
+	commentMetaInitials   = "docling__comment_initials"    // 作者缩写。
+	commentMetaUserID     = "docling__comment_user_id"     // Office 协作用户标识。
+	commentMetaProviderID = "docling__comment_provider_id" // 人员信息提供方标识。
+	commentMetaCreated    = "docling__comment_created"     // OOXML 原始创建时间。
+	commentMetaStatus     = "docling__comment_status"      // active/resolved/closed 等源状态。
+	commentMetaResolved   = "docling__comment_resolved"    // 归一化后的是否已解决状态。
+	commentMetaCell       = "docling__comment_cell"        // XLSX 批注锚定单元格。
+	commentMetaMentions   = "docling__comment_mentions"    // XLSX 批注内提及人员及字符范围。
+	commentMetaAssignedTo = "docling__comment_assigned_to" // PPTX 任务型批注的负责人列表。
+	commentMetaStartDate  = "docling__comment_start_date"  // PPTX 任务型批注开始时间。
+	commentMetaDueDate    = "docling__comment_due_date"    // PPTX 任务型批注截止时间。
+	commentMetaCompletion = "docling__comment_completion"  // PPTX 任务型批注完成比例。
+	commentMetaTitle      = "docling__comment_title"       // PPTX 任务型批注标题。
 )
 
 // officeCommentAuthor 保存 OOXML 人员部件中的协作身份信息。

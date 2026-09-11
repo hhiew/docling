@@ -1,6 +1,6 @@
 // office_collaboration_test.go 验证 DOCX、XLSX 与 PPTX 的现代协作批注、
 // 回复链、作者信息和解决状态均可在纯 Go 解析路径中保留。
-package docparse
+package docling
 
 import (
 	"archive/zip"

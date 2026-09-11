@@ -1,7 +1,7 @@
 // content_chunk.go 实现面向知识库检索的 content_list 分块适配器。
 // 它保持 Item 持久化协议不变，在消费侧统一完成章节聚合、长度控制、
 // 大表拆分、版式噪声过滤和 Docling 多模态元素分流。
-package docparse
+package docling
 
 import (
 	"math"

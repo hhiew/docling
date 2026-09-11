@@ -1,14 +1,16 @@
-# docparse — Pure-Go Document Parsing, Ready for Gen-AI
+# docling — Pure-Go Document Parsing, Ready for Gen-AI
 
 English | [简体中文](README.md)
 
 > Feed any document to your LLM — a single pure-Go binary, 1–2 orders of magnitude faster, with optional LLM enhancement for the hard pages.
 
-`docparse` converts PDF, Word, PPT, Excel/CSV, HTML, Markdown, AsciiDoc, EML email, images and plain text into a unified **DoclingDocument** structured model (aligned with the Docling Core `1.10.0` official protocol) — a drop-in document ingestion layer for RAG chunking, embedding pipelines and agent toolchains.
+`docling` converts PDF, Word, PPT, Excel/CSV, HTML, Markdown, AsciiDoc, EML email, images and plain text into a unified **DoclingDocument** structured model (aligned with the Docling Core `1.10.0` official protocol) — a drop-in document ingestion layer for RAG chunking, embedding pipelines and agent toolchains.
 
-## Why docparse
+> Naming note: this repository is a pure-Go implementation of the [Docling](https://github.com/docling-project/docling) protocol. The Go package is named `docling` and shares the same document model as the Python reference implementation.
 
-The mainstream approach to modern document parsing is a Python model pipeline (e.g. Docling): high quality, but it needs a Python service, loads layout models, and can take tens of seconds per document. **docparse makes a different engineering trade-off**:
+## Why docling (Go)
+
+The mainstream approach to modern document parsing is a Python model pipeline (e.g. Docling): high quality, but it needs a Python service, loads layout models, and can take tens of seconds per document. **docling (Go) makes a different engineering trade-off**:
 
 - ⚡ **1–2 orders of magnitude faster**: the pure-Go rule engine handles text-based documents in milliseconds to seconds (benchmarks below); ingesting millions of documents no longer requires a GPU fleet
 - 📦 **Single-binary deployment**: pure Go, zero Python, zero external services — `go get` and go; runs equally well in CI, on edge nodes and in embedded settings
@@ -18,9 +20,9 @@ The mainstream approach to modern document parsing is a Python model pipeline (e
 
 ## Benchmarks
 
-Same machine, same real-world PDFs (Apache-2.0 test samples). `docparse` (pure Go, no models) vs Docling `2.x` (CPU model pipeline, timed in-process after warm-up):
+Same machine, same real-world PDFs (Apache-2.0 test samples). `docling` (Go, no models) vs Docling `2.x` (CPU model pipeline, timed in-process after warm-up):
 
-| Document | docparse | Docling (CPU) | Speed-up |
+| Document | docling (Go) | Python Docling (CPU) | Speed-up |
 |----------|----------|---------------|----------|
 | Research paper (141 KB, 10 pages) | **0.31s** | 10.5s | **34×** |
 | Technical book (1.2 MB, mixed text & images) | **0.73s** | 111.7s | **153×** |
@@ -34,13 +36,13 @@ xychart-beta
     bar [0.31, 0.73]
 ```
 
-> Bar series: Docling (CPU model pipeline) then docparse (pure Go). Docling's time includes layout/table model inference; docparse loads no models at all.
+> Bar series: Python Docling (CPU model pipeline) then docling (Go rule engine). The Python time includes layout/table model inference; the Go version loads no models.
 >
-> **An honest note on quality**: Docling's model pipeline is still the ceiling for complex layouts and image understanding. docparse's strategy is a rule-engine baseline plus LLM enhancement on the pages that need it — the two are complementary, not mutually exclusive.
+> **An honest note on quality**: Docling's model pipeline is still the ceiling for complex layouts and image understanding. docling (Go)'s strategy is a rule-engine baseline plus LLM enhancement on the pages that need it — the two are complementary, not mutually exclusive.
 
 ## Parsing capability comparison
 
-| Capability | docparse (pure Go) | Python Docling | docparse + LLM hooks |
+| Capability | docling (Go) | Python Docling | docling (Go) + LLM hooks |
 |------|--------------------|----------------|----------------------|
 | Text-based PDF words with coordinates | ✅ pure Go | ✅ | ✅ |
 | Garbled-font recovery (CJK CMap / embedded fonts) | ✅ pure Go | ✅ | ✅ |
@@ -52,6 +54,41 @@ xychart-beta
 | DOCX/PPTX/XLSX comments·formulas·revisions·charts·SmartArt | ✅ pure Go | ⚠️ partial | ✅ |
 | Output protocol | ✅ Docling 1.10 official JSON | ✅ official | ✅ |
 | Deployment | single binary | Python service + models | single binary + model API |
+
+## Supported input formats
+
+| Input format | docling (Go) | Python Docling |
+|--------------|--------------|-----------------|
+| PDF | ✅ | ✅ |
+| Word (DOCX) | ✅ | ✅ |
+| PPT (PPTX) | ✅ | ✅ |
+| Excel (XLSX) / CSV | ✅ | ✅ |
+| HTML | ✅ | ✅ |
+| Markdown | ✅ | ✅ |
+| AsciiDoc | ✅ | ❌ |
+| EML email | ✅ | ✅ (also MSG) |
+| Images PNG/JPEG/BMP/WEBP | ✅ | ✅ (also TIFF) |
+| Plain text | ✅ | ✅ |
+| Docling JSON (read back) | ✅ | ✅ |
+| Audio transcription (WAV/MP3 ASR) | ❌ planned | ✅ |
+| EPUB / Apple Pages | ❌ planned | ✅ |
+| XML (XBRL/JATS/USPTO) / usda | ❌ planned | ✅ |
+| LaTeX | ❌ planned | ✅ |
+| ZIP archives | ❌ | ✅ |
+
+## Supported output formats
+
+| Output format | docling (Go) | Python Docling |
+|---------------|--------------|-----------------|
+| Markdown | ✅ | ✅ |
+| HTML | ✅ | ✅ |
+| DoclingDocument JSON (lossless) | ✅ | ✅ |
+| content_list (flat retrieval list) | ✅ | ⚠️ similar |
+| Hierarchical / Hybrid chunking | ✅ | ✅ |
+| Knowledge-base chunking (length/table/multimodal strategy) | ✅ | ❌ |
+| DocTags | ❌ planned | ✅ |
+| Plain text | ✅ | ✅ |
+| WebVTT (audio captions) | ❌ | ✅ |
 
 ## Supported Formats
 
@@ -78,12 +115,12 @@ go get github.com/unitedrhino/docling
 
 ```go
 // Parse → Markdown in one line
-md, err := docparse.ParseByExtToMarkdown("report.pdf", data)
+md, err := docling.ParseByExtToMarkdown("report.pdf", data)
 
 // Or step by step: get the structured model first
-doc, err := docparse.ParseByExt("report.docx", data)
-items := docparse.ToContentList(doc, docparse.SourceGolight) // flat list for RAG
-chunks := docparse.HierarchicalChunks(doc)                   // official hierarchical semantics
+doc, err := docling.ParseByExt("report.docx", data)
+items := docling.ToContentList(doc, docling.SourceGolight) // flat list for RAG
+chunks := docling.HierarchicalChunks(doc)                   // official hierarchical semantics
 md := doc.ToMarkdown()
 html := doc.ToHTML()
 ```
@@ -91,12 +128,12 @@ html := doc.ToHTML()
 ### Attach an LLM: modern hybrid parsing
 
 ```go
-doc, err := docparse.ParsePDFWithOptions(data, docparse.PDFOptions{
+doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
     GarbageThreshold: 0.4, // pages above this garbage ratio trigger OCR
-    OCRHook: func(req docparse.OCRRequest) (string, error) {
+    OCRHook: func(req docling.OCRRequest) (string, error) {
         return myLLMOCR(req) // plug in any OCR / multimodal model
     },
-    VisualHook: func(req docparse.PDFVisualRequest) (docparse.PDFVisualResult, error) {
+    VisualHook: func(req docling.PDFVisualRequest) (docling.PDFVisualResult, error) {
         // req.Prompt is the built-in strict JSON prompt; decode the model output into the struct.
         return myStructuredVision(req)
     },
@@ -133,8 +170,8 @@ signal and enter the optional vision path; text recognition for scanned pages re
 
 ```
 docling/
-├── docparse.go          # facade: Item, ParseByExt, ParseByExtToMarkdown
-├── docling.go           # DoclingDocument model (official protocol)
+├── docling.go           # facade: Item, ParseByExt, ParseByExtToMarkdown
+├── docling_document.go  # DoclingDocument model structures (official protocol)
 ├── doclingserve.go      # Docling service parsing (optional second engine)
 ├── export*.go           # Markdown / HTML exporters
 ├── contentlist.go       # ToContentList (RAG content list)

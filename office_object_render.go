@@ -1,6 +1,6 @@
 // office_object_render.go 为无法直接复用 Office 预览资源的复杂对象生成
 // 稳定语义 SVG。该预览不追求像素级还原，但在纯 Go 环境中保证对象可见。
-package docparse
+package docling
 
 import (
 	"encoding/base64"

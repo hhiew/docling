@@ -8,7 +8,7 @@
 //   - Content-Transfer-Encoding 显式解码 base64 / quoted-printable，
 //     字符集尽力转换（utf-8/us-ascii/iso-8859-1）；
 //   - 各 part 解析失败仅跳过该 part（不阻断整体），顶层头解析失败返回 error。
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -42,11 +42,11 @@ func ParseEML(data []byte) (*DoclingDocument, error) {
 // 附件递归时 +1）。
 func parseEML(data []byte, depth int) (*DoclingDocument, error) {
 	if depth > emlMaxDepth {
-		return nil, fmt.Errorf("docparse: eml 嵌套深度超过 %d 层", emlMaxDepth)
+		return nil, fmt.Errorf("docling: eml 嵌套深度超过 %d 层", emlMaxDepth)
 	}
 	msg, err := mail.ReadMessage(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 解析 eml 头失败: %w", err)
+		return nil, fmt.Errorf("docling: 解析 eml 头失败: %w", err)
 	}
 	doc := NewDoclingDocument("eml")
 	w := &emlWalker{doc: doc, depth: depth}
@@ -109,7 +109,7 @@ func (w *emlWalker) parseHeaders(h mail.Header) {
 // 参数 body 为该 part 的原始内容流（未解码），depth 为当前 MIME 深度。
 func (w *emlWalker) parsePart(body io.Reader, header mail.Header, depth int) error {
 	if depth > emlMaxDepth {
-		return fmt.Errorf("docparse: eml MIME 嵌套超过 %d 层", emlMaxDepth)
+		return fmt.Errorf("docling: eml MIME 嵌套超过 %d 层", emlMaxDepth)
 	}
 	mediaType, params, err := mime.ParseMediaType(strings.TrimSpace(header.Get("Content-Type")))
 	if err != nil {
@@ -119,7 +119,7 @@ func (w *emlWalker) parsePart(body io.Reader, header mail.Header, depth int) err
 	if strings.HasPrefix(mediaType, "multipart/") {
 		boundary := params["boundary"]
 		if boundary == "" {
-			return fmt.Errorf("docparse: eml multipart 缺少 boundary")
+			return fmt.Errorf("docling: eml multipart 缺少 boundary")
 		}
 		return w.walkMultipart(body, mediaType, boundary, depth)
 	}
@@ -305,7 +305,7 @@ func emlCharsetReader(charset string, input io.Reader) (io.Reader, error) {
 	}
 	encoding, err := htmlindex.Get(charset)
 	if err != nil || encoding == nil {
-		return nil, fmt.Errorf("docparse: 不支持的邮件字符集 %s", charset)
+		return nil, fmt.Errorf("docling: 不支持的邮件字符集 %s", charset)
 	}
 	return transform.NewReader(input, encoding.NewDecoder()), nil
 }

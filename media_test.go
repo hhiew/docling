@@ -2,7 +2,7 @@
 // mediaToDataURI（data URI 封装与 8MB 上限）、parseOOXMLCoreProps（core.xml
 // 解析）、docx/pptx 图片提取（rId → media 部件内嵌 data URI + caption）与
 // docx/pptx/xlsx/pdf 的 DocMeta 填充。zip 样例沿用 docx_test.go 的手工构造法。
-package docparse
+package docling
 
 import (
 	"archive/zip"

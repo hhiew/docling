@@ -1,5 +1,5 @@
 // pdf_poppler_test.go 验证 Poppler XHTML 词盒到统一 PDF 行/词模型的映射。
-package docparse
+package docling
 
 import "testing"
 

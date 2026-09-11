@@ -22,7 +22,7 @@
 //   - 幻灯片旧式及 Office 2021+ 现代 comments 部件转为 NOTES 文本；现代
 //     批注保留 authors、replyLst 与解决状态，按批注坐标关联最近正文项；
 //   - 空段落不产出元素（源码会产出空文本元素，知识库场景无需空块）。
-package docparse
+package docling
 
 import (
 	"archive/zip"
@@ -138,15 +138,15 @@ func ParsePPTX(data []byte) (*DoclingDocument, error) {
 	var err error
 	data, err = ooxml.NormalizeStrictOOXMLPackage(data)
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 归一化 Strict PPTX 失败: %w", err)
+		return nil, fmt.Errorf("docling: 归一化 Strict PPTX 失败: %w", err)
 	}
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 解析 pptx zip 失败: %w", err)
+		return nil, fmt.Errorf("docling: 解析 pptx zip 失败: %w", err)
 	}
 	presentationXML, ok := readPptxZipFile(reader, pptxPresentationPath)
 	if !ok {
-		return nil, fmt.Errorf("docparse: 缺少 %s，不是有效的 pptx", pptxPresentationPath)
+		return nil, fmt.Errorf("docling: 缺少 %s，不是有效的 pptx", pptxPresentationPath)
 	}
 
 	// 解析 presentation.xml：sldSz 页面 EMU 尺寸 + sldIdLst 的 r:id 顺序

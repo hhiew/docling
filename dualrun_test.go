@@ -1,4 +1,4 @@
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -17,14 +17,14 @@ import (
 // TestDualRunWithDoclingServe 是可选的集成对比测试（金标准双跑）：
 // 设置 DOCPARSE_DOCLING_URL（docling-serve 地址）与 DOCPARSE_SAMPLE_DIR
 // （样本目录，支持 pdf/docx/xlsx/pptx/html/adoc/md/csv/txt）后运行，
-// 对同批样本分别用 docparse 与 docling-serve 解析，输出逐样本的结构
+// 对同批样本分别用 docling 与 docling-serve 解析，输出逐样本的结构
 // 一致性摘要（元素数量/label 分布/表格数），供人工核对复刻质量。
 // 未设置环境变量时跳过——默认单测不依赖外部服务。
 //
 // 运行示例：
 //
 //	DOCPARSE_DOCLING_URL=http://<host>:8000 DOCPARSE_SAMPLE_DIR=./testdata/samples \
-//	  go test ./docparse/ -run TestDualRunWithDoclingServe -count=1 -v
+//	  go test ./docling/ -run TestDualRunWithDoclingServe -count=1 -v
 func TestDualRunWithDoclingServe(t *testing.T) {
 	serveURL := strings.TrimRight(os.Getenv("DOCPARSE_DOCLING_URL"), "/")
 	sampleDir := os.Getenv("DOCPARSE_SAMPLE_DIR")
@@ -56,7 +56,7 @@ func TestDualRunWithDoclingServe(t *testing.T) {
 	}
 }
 
-// dualRunParseLocal 用 docparse 本地解析并产出结构摘要。
+// dualRunParseLocal 用 docling 本地解析并产出结构摘要。
 func dualRunParseLocal(t *testing.T, name string, data []byte) string {
 	t.Helper()
 	doc, err := ParseByExt(name, data)

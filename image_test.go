@@ -1,6 +1,6 @@
 // image_test.go 验证图片格式输入：魔数识别（含拒绝未知格式）、无 OCR 时
 // 保留结构化图片、新旧 OCR 钩子兼容、识别结果校验与 ParseByExt 注册。
-package docparse
+package docling
 
 import (
 	"bytes"

@@ -13,7 +13,7 @@
 //     旧 Docling 路径曾直通 1-based page_no）；bbox 归一化为 top<=bottom，
 //     保持历史 content_list 不携带 coord_origin 的协议可稳定求并集；
 //   - 表格按 cell offset 铺格子渲染为 GFM Markdown，并做表格后处理清洗。
-package docparse
+package docling
 
 import (
 	"encoding/json"
@@ -25,7 +25,7 @@ import (
 // 解析器来源标记，写入 Item.Source，供下游区分 go_light 与 Docling 产物
 // （如多模态分流按 SourceDocling 判断）。
 const (
-	// SourceGolight Go 本地轻量解析（docparse 各后端）。
+	// SourceGolight Go 本地轻量解析（docling 各后端）。
 	SourceGolight = "golight"
 	// SourceDocling Docling 高级解析（docling-serve HTTP）。
 	SourceDocling = "docling"
@@ -37,7 +37,7 @@ const (
 //   - 旧版公式 LaTeX 存独立 latex 字段，归一化到 Text/Formula 消费语义。
 func ParseDoclingDocument(raw json.RawMessage) (*DoclingDocument, error) {
 	if len(raw) == 0 {
-		return nil, fmt.Errorf("docparse: docling json 为空")
+		return nil, fmt.Errorf("docling: docling json 为空")
 	}
 	// docling-serve 可能把 json_content 序列化为字符串，兼容剥一层
 	trimmed := raw
@@ -47,7 +47,7 @@ func ParseDoclingDocument(raw json.RawMessage) (*DoclingDocument, error) {
 	}
 	doc := &DoclingDocument{}
 	if err := json.Unmarshal(trimmed, doc); err != nil {
-		return nil, fmt.Errorf("docparse: 解析 docling json 失败: %w", err)
+		return nil, fmt.Errorf("docling: 解析 docling json 失败: %w", err)
 	}
 	normalizeDoclingDocument(doc)
 	return doc, nil

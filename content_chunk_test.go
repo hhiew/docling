@@ -1,6 +1,6 @@
 // 本文件验证 content_list 知识库分块策略，包括章节聚合、长度限制、
 // 大表拆分、多模态分流、噪声过滤和来源定位信息保留。
-package docparse
+package docling
 
 import (
 	"fmt"

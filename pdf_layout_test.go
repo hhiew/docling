@@ -1,5 +1,5 @@
 // pdf_layout_test.go 验证 PDF XY-cut 阅读顺序的单栏保护、多栏排序与跨栏锚点语义。
-package docparse
+package docling
 
 import (
 	"reflect"

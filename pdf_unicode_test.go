@@ -1,7 +1,7 @@
 // pdf_unicode_test.go 验证 PDF 字体 Unicode 恢复路径：覆盖多字节
 // ToUnicode CMap 范围进位，以及缺失 ToUnicode 时从嵌入 TrueType cmap
 // 和 Identity CIDToGIDMap 恢复中文文本。
-package docparse
+package docling
 
 import (
 	"bytes"

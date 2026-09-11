@@ -1,7 +1,7 @@
 // pdf_visual.go 定义 PDF 复杂页面的质量评估与可选大模型结构化视觉协议。
 // 纯 Go 坐标解析始终是主路径；只有页面存在扫描、乱码、疑似未恢复表格、
 // 公式密集或栏位歧义时才建议调用钩子，结果无效时安全回退原解析结果。
-package docparse
+package docling
 
 import (
 	"errors"
@@ -285,7 +285,7 @@ func normalizePDFVisualBBox(bbox *DoclingBBox, pageHeight float64) {
 // validatePDFVisualResult 校验标签、置信度、坐标及表格矩形范围。
 func validatePDFVisualResult(result PDFVisualResult, width, height float64) error {
 	if len(result.Items) == 0 || len(result.Items) > 2000 {
-		return errors.New("docparse: PDF 视觉结果元素数量无效")
+		return errors.New("docling: PDF 视觉结果元素数量无效")
 	}
 	allowed := map[DocItemLabel]bool{
 		LabelTitle: true, LabelSectionHeader: true, LabelText: true, LabelParagraph: true,
@@ -297,17 +297,17 @@ func validatePDFVisualResult(result PDFVisualResult, width, height float64) erro
 	totalRunes := 0
 	for _, item := range result.Items {
 		if !allowed[item.Label] || !isFinitePDFVisualNumber(item.Confidence) || item.Confidence < 0 || item.Confidence > 1 || item.BBox == nil {
-			return errors.New("docparse: PDF 视觉结果基础字段无效")
+			return errors.New("docling: PDF 视觉结果基础字段无效")
 		}
 		if item.Confidence < pdfVisualMinConfidence {
-			return errors.New("docparse: PDF 视觉结果置信度过低")
+			return errors.New("docling: PDF 视觉结果置信度过低")
 		}
 		if item.BBox.CoordOrigin != CoordOriginBottomLeft {
-			return errors.New("docparse: PDF 视觉结果坐标原点无效")
+			return errors.New("docling: PDF 视觉结果坐标原点无效")
 		}
 		if !isFinitePDFVisualBBox(item.BBox) || item.BBox.L < 0 || item.BBox.B < 0 || item.BBox.R <= item.BBox.L || item.BBox.T <= item.BBox.B ||
 			(width > 0 && item.BBox.R > width) || (height > 0 && item.BBox.T > height) {
-			return errors.New("docparse: PDF 视觉结果坐标越界")
+			return errors.New("docling: PDF 视觉结果坐标越界")
 		}
 		if item.Label == LabelTable {
 			if err := validatePDFVisualTable(item.TableData); err != nil {
@@ -322,32 +322,32 @@ func validatePDFVisualResult(result PDFVisualResult, width, height float64) erro
 				totalRunes += utf8.RuneCountInString(cell.Text)
 			}
 		} else if strings.TrimSpace(item.Text) == "" {
-			return errors.New("docparse: PDF 视觉结果文本为空")
+			return errors.New("docling: PDF 视觉结果文本为空")
 		} else {
 			visibleText.WriteString(item.Text)
 			visibleText.WriteByte('\n')
 			totalRunes += utf8.RuneCountInString(item.Text)
 		}
 		if totalRunes > ocrMaxResultRunes {
-			return errors.New("docparse: PDF 视觉结果文本过长")
+			return errors.New("docling: PDF 视觉结果文本过长")
 		}
 		if item.Label == LabelSectionHeader && (item.Level < 1 || item.Level > 9) {
-			return errors.New("docparse: PDF 视觉结果标题层级无效")
+			return errors.New("docling: PDF 视觉结果标题层级无效")
 		}
 		fingerprint := pdfVisualItemFingerprint(item)
 		for _, previousBBox := range seen[fingerprint] {
 			if pdfBBoxIntersectionRatio(previousBBox, item.BBox) >= 0.9 {
-				return errors.New("docparse: PDF 视觉结果包含重复对象")
+				return errors.New("docling: PDF 视觉结果包含重复对象")
 			}
 		}
 		seen[fingerprint] = append(seen[fingerprint], item.BBox)
 	}
 	content := visibleText.String()
 	if containsOCRRefusal(content) {
-		return errors.New("docparse: PDF 视觉结果包含拒答或无法识别说明")
+		return errors.New("docling: PDF 视觉结果包含拒答或无法识别说明")
 	}
 	if textGarbageRatio(content) >= 0.5 {
-		return errors.New("docparse: PDF 视觉结果含明显乱码")
+		return errors.New("docling: PDF 视觉结果含明显乱码")
 	}
 	return nil
 }
@@ -372,17 +372,17 @@ func validatePDFVisualTableCellGeometry(table *TableData, tableBBox *DoclingBBox
 			continue
 		}
 		if cell.BBox.CoordOrigin != CoordOriginBottomLeft {
-			return errors.New("docparse: PDF 视觉表格单元格坐标原点无效")
+			return errors.New("docling: PDF 视觉表格单元格坐标原点无效")
 		}
 		if !isFinitePDFVisualBBox(cell.BBox) || cell.BBox.L < 0 || cell.BBox.B < 0 ||
 			cell.BBox.R <= cell.BBox.L || cell.BBox.T <= cell.BBox.B ||
 			(width > 0 && cell.BBox.R > width) || (height > 0 && cell.BBox.T > height) {
-			return errors.New("docparse: PDF 视觉表格单元格坐标越界")
+			return errors.New("docling: PDF 视觉表格单元格坐标越界")
 		}
 		if tableBBox != nil && (cell.BBox.L < tableBBox.L-boundaryTolerance ||
 			cell.BBox.B < tableBBox.B-boundaryTolerance || cell.BBox.R > tableBBox.R+boundaryTolerance ||
 			cell.BBox.T > tableBBox.T+boundaryTolerance) {
-			return errors.New("docparse: PDF 视觉表格单元格坐标越出表格区域")
+			return errors.New("docling: PDF 视觉表格单元格坐标越出表格区域")
 		}
 	}
 	return nil
@@ -420,15 +420,15 @@ func pdfVisualItemFingerprint(item PDFVisualItem) string {
 // 模型省略空白单元格，但至少要有一个非空单元格，且已有单元格不能重叠。
 func validatePDFVisualTable(table *TableData) error {
 	if table == nil || table.NumRows < 1 || table.NumCols < 1 || table.NumRows > 500 || table.NumCols > 100 {
-		return errors.New("docparse: PDF 视觉表格尺寸无效")
+		return errors.New("docling: PDF 视觉表格尺寸无效")
 	}
 	switch table.Orientation {
 	case TableOrientation0, TableOrientation90, TableOrientation180, TableOrientation270:
 	default:
-		return errors.New("docparse: PDF 视觉表格方向无效")
+		return errors.New("docling: PDF 视觉表格方向无效")
 	}
 	if len(table.TableCells) == 0 || int64(len(table.TableCells)) > table.NumRows*table.NumCols {
-		return errors.New("docparse: PDF 视觉表格单元格数量无效")
+		return errors.New("docling: PDF 视觉表格单元格数量无效")
 	}
 	occupied := make(map[int64]struct{}, len(table.TableCells))
 	hasText := false
@@ -436,11 +436,11 @@ func validatePDFVisualTable(table *TableData) error {
 		if cell.StartRowOffsetIdx < 0 || cell.StartColOffsetIdx < 0 ||
 			cell.EndRowOffsetIdx <= cell.StartRowOffsetIdx || cell.EndColOffsetIdx <= cell.StartColOffsetIdx ||
 			cell.EndRowOffsetIdx > table.NumRows || cell.EndColOffsetIdx > table.NumCols {
-			return errors.New("docparse: PDF 视觉表格单元格越界")
+			return errors.New("docling: PDF 视觉表格单元格越界")
 		}
 		if cell.RowSpan != cell.EndRowOffsetIdx-cell.StartRowOffsetIdx ||
 			cell.ColSpan != cell.EndColOffsetIdx-cell.StartColOffsetIdx {
-			return errors.New("docparse: PDF 视觉表格单元格跨度不一致")
+			return errors.New("docling: PDF 视觉表格单元格跨度不一致")
 		}
 		if strings.TrimSpace(cell.Text) != "" {
 			hasText = true
@@ -449,14 +449,14 @@ func validatePDFVisualTable(table *TableData) error {
 			for column := cell.StartColOffsetIdx; column < cell.EndColOffsetIdx; column++ {
 				position := row*table.NumCols + column
 				if _, exists := occupied[position]; exists {
-					return errors.New("docparse: PDF 视觉表格单元格重叠")
+					return errors.New("docling: PDF 视觉表格单元格重叠")
 				}
 				occupied[position] = struct{}{}
 			}
 		}
 	}
 	if !hasText {
-		return errors.New("docparse: PDF 视觉表格内容为空")
+		return errors.New("docling: PDF 视觉表格内容为空")
 	}
 	return nil
 }

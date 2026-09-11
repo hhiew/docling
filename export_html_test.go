@@ -1,7 +1,7 @@
 // export_html_test.go 验证导出能力：ExportHTML（与 ExportMarkdown 同构的
 // 元素覆盖面：标题/段落/列表/表格/图片/代码/公式）、ToHTML/ToMarkdown 方法
 // 形式入口与 ParseByExtToMarkdown 一步导出。
-package docparse
+package docling
 
 import (
 	"strings"

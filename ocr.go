@@ -1,8 +1,8 @@
 // ocr.go 定义 PDF 解析的外部 OCR 钩子能力：扫描件页与高乱码页可回调
 // 调用方注入的识别实现（如大模型视觉识别服务），识别结果以
-// Markdown 结构化子文档并入主文档——docparse 本身不引入任何 OCR
+// Markdown 结构化子文档并入主文档——docling 本身不引入任何 OCR
 // 引擎或渲染依赖，识别完全由调用方决定。
-package docparse
+package docling
 
 import (
 	"bytes"

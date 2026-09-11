@@ -58,14 +58,14 @@ func NormalizeStrictOOXMLPackage(data []byte) ([]byte, error) {
 	var total uint64
 	for _, file := range reader.File {
 		if !isSafeOOXMLZipMember(file.Name) {
-			return nil, fmt.Errorf("docparse: OOXML ZIP 路径越界: %s", file.Name)
+			return nil, fmt.Errorf("docling: OOXML ZIP 路径越界: %s", file.Name)
 		}
 		if file.UncompressedSize64 > strictOOXMLMaxMemberBytes {
-			return nil, fmt.Errorf("docparse: OOXML 部件过大: %s", file.Name)
+			return nil, fmt.Errorf("docling: OOXML 部件过大: %s", file.Name)
 		}
 		total += file.UncompressedSize64
 		if total > strictOOXMLMaxTotalBytes {
-			return nil, fmt.Errorf("docparse: OOXML 解压总量过大")
+			return nil, fmt.Errorf("docling: OOXML 解压总量过大")
 		}
 	}
 
@@ -75,14 +75,14 @@ func NormalizeStrictOOXMLPackage(data []byte) ([]byte, error) {
 		if !isOOXMLXMLPart(file.Name) {
 			if err := writer.Copy(file); err != nil {
 				_ = writer.Close()
-				return nil, fmt.Errorf("docparse: 复制 OOXML 部件 %s: %w", file.Name, err)
+				return nil, fmt.Errorf("docling: 复制 OOXML 部件 %s: %w", file.Name, err)
 			}
 			continue
 		}
 		payload, err := readOOXMLZipFileLimited(file, strictOOXMLMaxMemberBytes)
 		if err != nil {
 			_ = writer.Close()
-			return nil, fmt.Errorf("docparse: 读取 OOXML 部件 %s: %w", file.Name, err)
+			return nil, fmt.Errorf("docling: 读取 OOXML 部件 %s: %w", file.Name, err)
 		}
 		payload = strictOOXMLNamespacePattern.ReplaceAllFunc(payload, func(uri []byte) []byte {
 			return []byte(strictOOXMLNamespaceToTransitional(string(uri)))
@@ -92,15 +92,15 @@ func NormalizeStrictOOXMLPackage(data []byte) ([]byte, error) {
 		entry, err := writer.CreateHeader(header)
 		if err != nil {
 			_ = writer.Close()
-			return nil, fmt.Errorf("docparse: 创建 OOXML 部件 %s: %w", file.Name, err)
+			return nil, fmt.Errorf("docling: 创建 OOXML 部件 %s: %w", file.Name, err)
 		}
 		if _, err := entry.Write(payload); err != nil {
 			_ = writer.Close()
-			return nil, fmt.Errorf("docparse: 写入 OOXML 部件 %s: %w", file.Name, err)
+			return nil, fmt.Errorf("docling: 写入 OOXML 部件 %s: %w", file.Name, err)
 		}
 	}
 	if err := writer.Close(); err != nil {
-		return nil, fmt.Errorf("docparse: 完成 Strict OOXML 归一化: %w", err)
+		return nil, fmt.Errorf("docling: 完成 Strict OOXML 归一化: %w", err)
 	}
 	return output.Bytes(), nil
 }

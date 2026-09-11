@@ -1,7 +1,7 @@
 // docx_omml.go 实现 Office Math Markup Language 到 LaTeX 的纯 Go 转换。
 // 转换器优先覆盖技术文档常见结构；未知标签递归保留可见子内容，确保公式
 // 不因扩展属性或新版 Office 节点而丢失。
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -77,7 +77,7 @@ func parseOMMLTree(raw []byte) (*ommlNode, error) {
 // parseOMMLNode 递归解析一个 XML 子树，并限制深度防止畸形输入耗尽栈。
 func parseOMMLNode(decoder *xml.Decoder, start xml.StartElement, depth int) (*ommlNode, error) {
 	if depth > ommlMaxRenderDepth {
-		return nil, fmt.Errorf("docparse: OMML nesting exceeds %d", ommlMaxRenderDepth)
+		return nil, fmt.Errorf("docling: OMML nesting exceeds %d", ommlMaxRenderDepth)
 	}
 	node := &ommlNode{name: start.Name.Local, attrs: make(map[string]string, len(start.Attr))}
 	for _, attr := range start.Attr {

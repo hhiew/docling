@@ -1,7 +1,7 @@
 // pdf_image.go 纯 Go 解析 PDF 页面 Image XObject 的绘制位置与覆盖率，
 // 并通过 pdfcpu 将可安全解码的图片保存为带 data URI 的 PictureItem 中间行。
 // 几何识别与像素解码相互独立：解码失败仍保留图片质量信号用于视觉路由。
-package docparse
+package docling
 
 import (
 	"bytes"

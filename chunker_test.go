@@ -1,6 +1,6 @@
 // chunker_test.go 验证 DoclingDocument 的层级语义分块：标题路径按 level
 // 更新、列表分组整体序列化、表格保持 Markdown 结构，以及来源引用与跨页坐标保留。
-package docparse
+package docling
 
 import (
 	"encoding/json"

@@ -1,7 +1,7 @@
 // pdf_layout.go 基于行级边界框实现保守的 PDF XY-cut 阅读顺序恢复。
 // 算法只在页面存在稳定主空白带时切分左右栏；跨越空白带的宽行作为标题、
 // 说明等横向锚点，先按锚点划分上下区域，再在各区域内按左到右递归读取。
-package docparse
+package docling
 
 import (
 	"math"

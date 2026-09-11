@@ -1,7 +1,7 @@
 // eml_test.go 验证 EML 解析：Subject/引用头与 DocMeta、multipart 递归
 // （text/plain + text/html + message/rfc822 嵌套）、base64 正文解码、
 // 畸形输入报错与 ParseByExt 注册。
-package docparse
+package docling
 
 import (
 	"encoding/base64"

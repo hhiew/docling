@@ -9,7 +9,7 @@
 // 重建对照集：go test ./... -run TestExamplesGolden -update
 //
 //	解析能力演进后，一键重建全部样例源文件与期望输出。
-package docparse
+package docling
 
 import (
 	"bytes"

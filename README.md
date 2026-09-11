@@ -1,14 +1,16 @@
-# docparse — 纯 Go 文档解析,为 Gen-AI 而生
+# docling — 纯 Go 文档解析,为 Gen-AI 而生
 
 [English](README_EN.md) | 简体中文
 
 > 把任何文档喂给你的大模型 —— 纯 Go 单二进制,快 1~2 个数量级,复杂页可挂大模型增强。
 
-`docparse` 将 PDF、Word、PPT、Excel/CSV、HTML、Markdown、AsciiDoc、EML 邮件、图片与纯文本解析为统一的 **DoclingDocument** 结构化模型(对齐 Docling Core `1.10.0` 官方协议),为 RAG 切片、向量化和 Agent 工具链提供开箱即用的文档摄入层。
+`docling` 将 PDF、Word、PPT、Excel/CSV、HTML、Markdown、AsciiDoc、EML 邮件、图片与纯文本解析为统一的 **DoclingDocument** 结构化模型(对齐 Docling Core `1.10.0` 官方协议),为 RAG 切片、向量化和 Agent 工具链提供开箱即用的文档摄入层。
 
-## 为什么是 docparse
+> 命名说明:本仓库是 [Docling](https://github.com/docling-project/docling) 协议的纯 Go 实现,Go 包名为 `docling`,与 Python 官方实现共享同一文档模型。
 
-现代文档解析的主流方案是 Python 模型管线(如 Docling):质量高,但需要 Python 服务、加载布局模型,转换一个文档动辄几十秒。**docparse 给出另一种工程取舍**:
+## 为什么是 docling(Go)
+
+现代文档解析的主流方案是 Python 模型管线(如 Docling):质量高,但需要 Python 服务、加载布局模型,转换一个文档动辄几十秒。**docling(Go)给出另一种工程取舍**:
 
 - ⚡ **快 1~2 个数量级**:纯 Go 规则引擎处理文本型文档毫秒到秒级完成(实测见下),批量摄入十万级文档不再需要 GPU 集群
 - 📦 **单二进制部署**:纯 Go 实现,零 Python/零外部服务,`go get` 即用;CI、边缘节点、嵌入式场景同样可跑
@@ -18,9 +20,9 @@
 
 ## 性能实测
 
-同一台机器、同一批真实 PDF(Apache-2.0 测试样本),`docparse`(纯 Go,无模型)对 Docling `2.x`(CPU 模型管线,同进程预热后计时):
+同一台机器、同一批真实 PDF(Apache-2.0 测试样本),`docling`(Go,无模型)对 Docling `2.x`(CPU 模型管线,同进程预热后计时):
 
-| 文档 | docparse | Docling(CPU) | 加速比 |
+| 文档 | docling(Go) | Python Docling(CPU) | 加速比 |
 |------|----------|----------------|--------|
 | 学术论文(141 KB,10 页) | **0.31s** | 10.5s | **34×** |
 | 技术书稿(1.2 MB,图文混排) | **0.73s** | 111.7s | **153×** |
@@ -34,13 +36,13 @@ xychart-beta
     bar [0.31, 0.73]
 ```
 
-> 柱状序列依次为 Docling(CPU 模型管线)与 docparse(纯 Go)。Docling 的耗时包含布局/表格模型推理;docparse 不加载任何模型。
+> 柱状序列依次为 Python Docling(CPU 模型管线)与 docling(Go 纯规则)。Python 版耗时包含布局/表格模型推理;Go 版不加载任何模型。
 >
-> **质量取舍请诚实对待**:Docling 的模型管线在复杂版面、图片理解上仍是上限;docparse 的策略是规则引擎保底 + 关键页大模型增强,两者互补而非互斥。
+> **质量取舍请诚实对待**:Docling 的模型管线在复杂版面、图片理解上仍是上限;docling(Go)的策略是规则引擎保底 + 关键页大模型增强,两者互补而非互斥。
 
 ## 解析能力对比
 
-| 能力 | docparse(纯 Go) | Python Docling | docparse + 大模型钩子 |
+| 能力 | docling(纯 Go) | Python Docling | docling + 大模型钩子 |
 |------|------------------|----------------|------------------------|
 | 文本型 PDF 文字与坐标 | ✅ 纯 Go | ✅ | ✅ |
 | 缺 ToUnicode 字体乱码恢复(CJK CMap/嵌入字体) | ✅ 纯 Go | ✅ | ✅ |
@@ -52,6 +54,41 @@ xychart-beta
 | DOCX/PPTX/XLSX 批注·公式·修订·图表·SmartArt | ✅ 纯 Go | ⚠️ 部分 | ✅ |
 | 输出协议 | ✅ Docling 1.10 官方 JSON | ✅ 官方 | ✅ |
 | 部署形态 | 单二进制 | Python 服务 + 模型文件 | 单二进制 + 模型 API |
+
+## 输入格式对比
+
+| 输入格式 | docling(Go) | Python Docling |
+|----------|--------------|-----------------|
+| PDF | ✅ | ✅ |
+| Word (DOCX) | ✅ | ✅ |
+| PPT (PPTX) | ✅ | ✅ |
+| Excel (XLSX) / CSV | ✅ | ✅ |
+| HTML | ✅ | ✅ |
+| Markdown | ✅ | ✅ |
+| AsciiDoc | ✅ | ❌ |
+| EML 邮件 | ✅ | ✅(另支持 MSG) |
+| 图片 PNG/JPEG/BMP/WEBP | ✅ | ✅(另支持 TIFF) |
+| 纯文本 | ✅ | ✅ |
+| Docling JSON(回读) | ✅ | ✅ |
+| 音频转写(WAV/MP3 ASR) | ❌ 规划中 | ✅ |
+| EPUB / Apple Pages | ❌ 规划中 | ✅ |
+| XML(XBRL/JATS/USPTO)/ usda | ❌ 规划中 | ✅ |
+| LaTeX | ❌ 规划中 | ✅ |
+| ZIP 压缩包 | ❌ | ✅ |
+
+## 输出格式对比
+
+| 输出格式 | docling(Go) | Python Docling |
+|----------|--------------|-----------------|
+| Markdown | ✅ | ✅ |
+| HTML | ✅ | ✅ |
+| DoclingDocument JSON(无损) | ✅ | ✅ |
+| content_list(检索扁平内容列表) | ✅ | ⚠️ 类似能力 |
+| 层级分块(Hierarchical / Hybrid) | ✅ | ✅ |
+| 知识库分块(长度/表格/多模态策略) | ✅ | ❌ |
+| DocTags | ❌ 规划中 | ✅ |
+| 纯文本 | ✅ | ✅ |
+| WebVTT(音频字幕) | ❌ | ✅ |
 
 ## 支持的格式
 
@@ -78,12 +115,12 @@ go get github.com/unitedrhino/docling
 
 ```go
 // 一行完成"解析 → Markdown"
-md, err := docparse.ParseByExtToMarkdown("报告.pdf", data)
+md, err := docling.ParseByExtToMarkdown("报告.pdf", data)
 
 // 或分步:拿到结构化模型再消费
-doc, err := docparse.ParseByExt("报告.docx", data)
-items := docparse.ToContentList(doc, docparse.SourceGolight) // RAG 切片用扁平内容
-chunks := docparse.HierarchicalChunks(doc)                   // 官方语义层级分块
+doc, err := docling.ParseByExt("报告.docx", data)
+items := docling.ToContentList(doc, docling.SourceGolight) // RAG 切片用扁平内容
+chunks := docling.HierarchicalChunks(doc)                   // 官方语义层级分块
 md := doc.ToMarkdown()
 html := doc.ToHTML()
 ```
@@ -91,12 +128,12 @@ html := doc.ToHTML()
 ### 挂载大模型:现代混合解析
 
 ```go
-doc, err := docparse.ParsePDFWithOptions(data, docparse.PDFOptions{
+doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
     GarbageThreshold: 0.4, // 乱码率超过该值的页触发 OCR
-    OCRHook: func(req docparse.OCRRequest) (string, error) {
+    OCRHook: func(req docling.OCRRequest) (string, error) {
         return myLLMOCR(req) // 接任意 OCR / 多模态模型
     },
-    VisualHook: func(req docparse.PDFVisualRequest) (docparse.PDFVisualResult, error) {
+    VisualHook: func(req docling.PDFVisualRequest) (docling.PDFVisualResult, error) {
         // req.Prompt 是内置的严格 JSON 提示词;把多模态模型返回解码即可。
         return myStructuredVision(req)
     },
@@ -123,8 +160,7 @@ go test ./... -run TestExamplesGolden -update    # 解析行为变化后一键�
 
 ```
 docling/
-├── docparse.go          # 门面:Item、ParseByExt、ParseByExtToMarkdown
-├── docling.go           # DoclingDocument 模型(官方协议)
+├── docling.go          # 门面:Item、ParseByExt、ParseByExtToMarkdown
 ├── doclingserve.go      # Docling 服务解析(可选第二引擎)
 ├── export*.go           # Markdown / HTML 导出
 ├── contentlist.go       # ToContentList(RAG 内容列表)

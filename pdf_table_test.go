@@ -1,5 +1,5 @@
 // pdf_table_test.go 验证 PDF 坐标表格识别的网格恢复、正文去重和保守误判边界。
-package docparse
+package docling
 
 import (
 	"strings"

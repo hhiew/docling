@@ -4,7 +4,7 @@
 // 图片（<img src=URI> + caption）、代码块（<pre><code data-lang>）与公式
 // （LaTeX 原文以 <span class="formula"> 包裹，不要求前端渲染），
 // 输出完整 <!DOCTYPE html> 文档，用于 Web 预览与富文本下游消费。
-package docparse
+package docling
 
 import (
 	"fmt"

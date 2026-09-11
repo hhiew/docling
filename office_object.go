@@ -1,7 +1,7 @@
 // office_object.go 统一保存 OOXML 复杂对象的语义、关系来源和可选预览。
 // SmartArt、艺术字与嵌入对象均按 Docling 1.10 的 PictureItem 表示；
-// 非官方信息只写入带 docparse__ 前缀的 PictureMeta 扩展字段。
-package docparse
+// 非官方信息只写入带 docling__ 前缀的 PictureMeta 扩展字段。
+package docling
 
 import (
 	"bytes"
@@ -61,12 +61,12 @@ func officeObjectCaption(record officeObjectRecord) string {
 func officeObjectExtra(record officeObjectRecord) map[string]json.RawMessage {
 	extra := map[string]json.RawMessage{}
 	values := map[string]string{
-		"docparse__office_object_type":         officeObjectClassName(record.kind),
-		"docparse__office_object_name":         record.name,
-		"docparse__office_object_relationship": record.relationship,
-		"docparse__office_object_target":       record.target,
-		"docparse__office_object_program":      record.program,
-		"docparse__office_object_geometry":     record.geometry,
+		"docling__office_object_type":         officeObjectClassName(record.kind),
+		"docling__office_object_name":         record.name,
+		"docling__office_object_relationship": record.relationship,
+		"docling__office_object_target":       record.target,
+		"docling__office_object_program":      record.program,
+		"docling__office_object_geometry":     record.geometry,
 	}
 	for key, value := range values {
 		if value == "" {
@@ -92,7 +92,7 @@ func addOfficeObjectPicture(doc *DoclingDocument, record officeObjectRecord, pro
 	picture.ContentLayer = layer
 	picture.Meta = &PictureMeta{
 		Classification: &PictureClassificationMetaField{Predictions: []PictureClassificationPrediction{{
-			PredictionMeta: PredictionMeta{Confidence: &confidence, CreatedBy: "docparse-ooxml"},
+			PredictionMeta: PredictionMeta{Confidence: &confidence, CreatedBy: "docling-ooxml"},
 			ClassName:      officeObjectClassName(record.kind),
 		}}},
 		Extra: officeObjectExtra(record),

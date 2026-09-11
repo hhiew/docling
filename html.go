@@ -1,8 +1,8 @@
-// html.go 把 HTML 文档解析为 DoclingDocument，是 docparse 通用组件的 HTML 后端。
+// html.go 把 HTML 文档解析为 DoclingDocument，是 docling 通用组件的 HTML 后端。
 // 块级标签分发、平铺标题、列表/表格/代码块/图片语义、<br> 哨兵换行与
 // 隐藏元素过滤均复刻 docling 的 html_backend.py；
 // 图片占位和首标题前 furniture 分层对齐 Docling HTML 后端；prov 全空不生成。
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -54,7 +54,7 @@ func ParseHTML(data []byte) (*DoclingDocument, error) {
 	}
 	root, err := html.Parse(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 解析 html 失败: %w", err)
+		return nil, fmt.Errorf("docling: 解析 html 失败: %w", err)
 	}
 	body := htmlFindElement(root, "body")
 	if body == nil {

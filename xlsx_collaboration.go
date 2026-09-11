@@ -1,6 +1,6 @@
 // xlsx_collaboration.go 解析 Excel 365 threaded comments 与 persons 部件，
 // 将回复链转换为 notes 层 comment_section，并保留单元格锚点和协作元数据。
-package docparse
+package docling
 
 import (
 	"archive/zip"

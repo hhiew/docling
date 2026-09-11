@@ -4,7 +4,7 @@
 // 由 internal/pdfenc 完成 alpha 展开与像素合成。
 //
 // 任何一步失败都保留原提取结果：软蒙版是增强信息，不能让图片整体丢失。
-package docparse
+package docling
 
 import (
 	pdfcpumodel "github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"

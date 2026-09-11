@@ -5,7 +5,7 @@
 // → pdftotext -bbox-layout（TOPLEFT 词盒转 BOTTOMLEFT，行高近似字号）
 // → 外部 OCR 钩子。
 // pdftotext 为可选外部依赖（PATH 检测，缺失时降级链自动禁用）。
-package docparse
+package docling
 
 import (
 	"os"
@@ -49,7 +49,7 @@ func extractPDFLinesByPoppler(data []byte) (map[int64][]pdfLine, bool) {
 	if !popplerAvailable() {
 		return nil, false
 	}
-	tmp, err := os.CreateTemp("", "docparse-poppler-*.pdf")
+	tmp, err := os.CreateTemp("", "docling-poppler-*.pdf")
 	if err != nil {
 		return nil, false
 	}

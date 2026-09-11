@@ -1,7 +1,7 @@
 // ooxml_chart_data.go 实现 OOXML 图表公式的数据回填。XLSX 图表直接读取
 // 当前工作簿，DOCX/PPTX 图表读取 chart*.xml.rels 指向的嵌入 XLSX；全部
 // 使用 archive/zip 与 excelize 的纯 Go 路径，不依赖 Office 或 LibreOffice。
-package docparse
+package docling
 
 import (
 	"archive/zip"

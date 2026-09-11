@@ -2,7 +2,7 @@
 // 魔数识别格式后构造单页文档（一页一图，ImageRef 内嵌 data URI）；
 // 无 OCR 时仍产出包含像素尺寸/DPI 的 PictureItem；配置 OCRHook 或兼容的
 // PageOCRHook 时，识别结果经清洗校验后由 ParseMarkdown 结构化并入文档。
-package docparse
+package docling
 
 import (
 	"bytes"
@@ -30,14 +30,14 @@ func ParseImage(data []byte) (*DoclingDocument, error) {
 func ParseImageWithOptions(data []byte, opt PDFOptions) (*DoclingDocument, error) {
 	ext := detectImageExt(data)
 	if ext == "" {
-		return nil, fmt.Errorf("docparse: 不支持的图片格式（仅支持 PNG/JPEG/BMP/WEBP）")
+		return nil, fmt.Errorf("docling: 不支持的图片格式（仅支持 PNG/JPEG/BMP/WEBP）")
 	}
 	config, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("docparse: 无法读取图片尺寸: %w", err)
+		return nil, fmt.Errorf("docling: 无法读取图片尺寸: %w", err)
 	}
 	if config.Width <= 0 || config.Height <= 0 {
-		return nil, fmt.Errorf("docparse: 图片尺寸无效: %dx%d", config.Width, config.Height)
+		return nil, fmt.Errorf("docling: 图片尺寸无效: %dx%d", config.Width, config.Height)
 	}
 	mimeType := ooxmlMediaMime(ext)
 	if opt.MIMEType == "" {

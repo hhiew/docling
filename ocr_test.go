@@ -1,7 +1,7 @@
 // ocr_test.go 验证外部 OCR 钩子链路：扫描页触发、识别结果结构化并入
 // （标题/表格/文本，prov 标注实际页号）、钩子失败回退原兜底行为、
 // 正常页不触发；以及子文档合并的引用偏移正确性。
-package docparse
+package docling
 
 import (
 	"bytes"

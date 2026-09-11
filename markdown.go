@@ -1,5 +1,5 @@
 // markdown.go 实现 Markdown 到官方 DoclingDocument 的结构化转换。
-package docparse
+package docling
 
 import (
 	"encoding/json"
@@ -112,7 +112,7 @@ func ParseMarkdown(data []byte) (*DoclingDocument, error) {
 }
 
 // flatHeadingMetaKey 标记由顺序推导章节路径的官方平铺标题。
-const flatHeadingMetaKey = "docparse__flat_heading"
+const flatHeadingMetaKey = "docling__flat_heading"
 
 // markFlatHeading 给 Markdown/HTML 平铺标题写入命名空间元数据，避免把 PDF
 // 封面标题等同样挂 body 的非章节标题误用于 content_list 路径。

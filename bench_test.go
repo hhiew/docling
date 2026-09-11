@@ -1,15 +1,15 @@
 // bench_test.go 多格式真实样本批量评测（TASK-112 评测基准）：
-// 对 eval-samples 样本库（pdf/md/docx/xlsx）批量执行 docparse 解析，
+// 对 eval-samples 样本库（pdf/md/docx/xlsx）批量执行 docling 解析，
 // 产出逐文档与汇总指标（解析成功率/乱码率分布/label 分布/表格产出/耗时），
 // 用于质量优化前后对比与 Docling 复刻效果的量化验证。
 //
 // 运行方式（样本库不进 git，位于 .temp/eval-samples/）：
 //
 //	DOCPARSE_EVAL_SAMPLE_DIR=/home/ubuntu/saas/.temp/eval-samples \
-//	  go test ./docparse/ -run TestBenchmarkSamples -count=1 -v
+//	  go test ./docling/ -run TestBenchmarkSamples -count=1 -v
 //
 // 未设置环境变量时跳过（默认单测不依赖本地样本库）。
-package docparse
+package docling
 
 import (
 	"encoding/base64"

@@ -1,7 +1,7 @@
 // official_schema_validation_test.go 提供可选的 Docling Core 1.10 官方模型验收：
 // 用仓库内自构造 fixture 解析全部支持格式，再交给显式配置的 Python 解释器
 // 调用 DoclingDocument.model_validate 校验。日常 Go 测试不依赖 Python。
-package docparse
+package docling
 
 import (
 	"encoding/base64"
@@ -22,7 +22,7 @@ type officialSchemaValidationCase struct {
 // 校验单个测试文档；未配置时保持日常纯 Go 测试零外部依赖。
 func validateDocumentWithDoclingCore110ForTest(t *testing.T, name string, doc *DoclingDocument) {
 	t.Helper()
-	python := strings.TrimSpace(os.Getenv("DOCPARSE_DOCLING_PYTHON"))
+	python := strings.TrimSpace(os.Getenv("DOCLING_PYTHON"))
 	if python == "" {
 		return
 	}
@@ -45,11 +45,11 @@ func decodeOfficialImageFixture(t *testing.T, encoded string) []byte {
 
 // TestAllSupportedFormatsValidateWithDoclingCore110 验证全部支持格式的规范输出
 // 都能被 Docling Core schema 1.10.0 的官方 Pydantic 模型接受。
-// 设置 DOCPARSE_DOCLING_PYTHON 为已安装 docling-core 的 Python 解释器后启用。
+// 设置 DOCLING_PYTHON 为已安装 docling-core 的 Python 解释器后启用。
 func TestAllSupportedFormatsValidateWithDoclingCore110(t *testing.T) {
-	python := strings.TrimSpace(os.Getenv("DOCPARSE_DOCLING_PYTHON"))
+	python := strings.TrimSpace(os.Getenv("DOCLING_PYTHON"))
 	if python == "" {
-		t.Skip("未配置 DOCPARSE_DOCLING_PYTHON，跳过可选官方模型校验")
+		t.Skip("未配置 DOCLING_PYTHON，跳过可选官方模型校验")
 	}
 
 	docx := mustZipDocx(t, buildStructuredDocxXML(
@@ -89,7 +89,7 @@ func TestAllSupportedFormatsValidateWithDoclingCore110(t *testing.T) {
 	cases := make([]officialSchemaValidationCase, 0, len(fixtures))
 	for _, fixture := range fixtures {
 		doc, err := ParseByExtWithOptions(fixture.name, fixture.data, ParseOptions{
-			OriginURI:              "s3://docparse-fixtures/" + fixture.name,
+			OriginURI:              "s3://docling-fixtures/" + fixture.name,
 			DisablePopplerFallback: true,
 		})
 		if err != nil {

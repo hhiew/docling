@@ -1,6 +1,6 @@
 // docling_schema_compat_test.go 验证 Docling Core 1.10 协议的规范输出、
 // 旧字段读取兼容、来源信息和默认正文层导出行为。
-package docparse
+package docling
 
 import (
 	"crypto/sha256"

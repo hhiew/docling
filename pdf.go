@@ -20,7 +20,7 @@
 //   - 树构建：buildPDFDoclingDocument（标题按层级父挂接表达章节路径）；
 //   - 兼容出口：buildPDFContentItems / classifyPDFLines（旧 content_list 视图，
 //     供既有测试与统计使用）。
-package docparse
+package docling
 
 import (
 	"math"
