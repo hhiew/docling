@@ -1,0 +1,17 @@
+From: ops@example.com
+To: team@example.com
+Subject: =?utf-8?B?5beh5qOA5ZGo5oql?=
+Date: Mon, 8 Sep 2026 10:00:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="boundary-42"
+
+--boundary-42
+Content-Type: text/plain; charset=utf-8
+
+本周巡检已完成，所有网关运行正常，磁盘占用率低于 60%。
+
+--boundary-42
+Content-Type: text/html; charset=utf-8
+
+<html><body><p>本周巡检已完成，所有网关运行正常。</p></body></html>
+--boundary-42--

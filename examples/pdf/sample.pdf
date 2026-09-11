@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /FirstChar 32 /LastChar 126 /Widths [500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500 500] >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 248 >>
+stream
+BT /F1 18 Tf 72 720 Td (Gateway Product Specification) Tj ET
+BT /F1 11 Tf 72 680 Td (This specification covers deployment and acceptance of the edge gateway series.) Tj ET
+BT /F1 11 Tf 72 660 Td (Supported protocols: Modbus, MQTT and OPC UA.) Tj ETendstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 7 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+7 0 obj
+<< /Length 261 >>
+stream
+BT /F1 14 Tf 72 720 Td (Network Parameters) Tj ET
+BT /F1 11 Tf 72 690 Td (Model            Protocol        Max Points) Tj ET
+BT /F1 11 Tf 72 670 Td (GW-100           Modbus          512) Tj ET
+BT /F1 11 Tf 72 650 Td (GW-200           MQTT            2048) Tj ETendstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000636 00000 n 
+0000000762 00000 n 
+0000001060 00000 n 
+0000001186 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1497
+%%EOF
