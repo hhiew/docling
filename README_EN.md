@@ -312,13 +312,50 @@ fmt.Println(md) // formula LaTeX, SmartArt flow SVG, WordArt & OLE classificatio
 ```
 
 
-## Relationship to Docling
+## Gaps vs Python Docling (stated honestly)
 
-The protocol layer is fully aligned with Docling Core `1.10.0` and round-trips official JSON
-losslessly; chunking mirrors the official HierarchicalChunker/HybridChunker. **Known conservative
-boundaries** (results are never fabricated): CCITT K>0 compression, real ICC color management,
-soft-mask Matte, pixel-level layout segmentation and vector graphics semantics keep their raw
-signal and enter the optional vision path; text recognition for scanned pages requires OCR.
+This repository is a Go implementation of the Docling protocol — **complementary to, not a
+drop-in replacement for, the Python original**. The protocol layer is fully aligned with
+Docling Core `1.10.0` (lossless JSON round-trip) and chunking mirrors the official
+HierarchicalChunker/HybridChunker; on parsing quality the gaps are explicit:
+
+### Where we lead (pure-Go rule engine)
+
+- **Speed & deployment**: 34–153× faster on text-based documents, single binary, zero deps;
+  the Python original needs a service plus multi-GB layout/table/formula model files
+- **Office structural depth**: comment reply chains, tracked changes, OMML formulas, raw
+  formulas & pivot-table semantics, SmartArt/WordArt/OLE classification — the original's
+  Office coverage is thinner (e.g. revisions and some chart semantics are not restored)
+- **In-document chart data**: OOXML chart caches and formula-range backfill become searchable
+  tables; the original reads charts through vision models, so data accuracy depends on the model
+- **Extra outputs**: content_list retrieval format and knowledge-base chunking are built for
+  RAG; the original has no counterpart
+
+### Where the Python original leads (model-pipeline ceiling)
+
+- **Scanned & image-only documents**: the original ships an OCR model pipeline out of the box;
+  without an OCRHook configured we cannot produce text for pure scans (measured: image-only
+  PDFs like mountain/VectorApple yield image assets only)
+- **Complex layout understanding**: pixel-level layout segmentation, non-rectangular layouts,
+  rotated scans (measured: the ITU-T.81 cover is a rotated scan and needs the PDFVisualHook to
+  read in the right orientation) — native to the model pipeline
+- **Tables/formulas inside images**: TableFormer recognizes image tables directly; we route
+  such pages through the VisualHook, and without it we keep geometric signals rather than guess
+- **Input coverage**: audio ASR, EPUB, Apple Pages, XML families (XBRL/JATS/USPTO) and LaTeX are
+  supported by the original and still on our roadmap
+- **Extreme fonts**: for embedded CID-keyed CFF without mappings or encrypted fonts, the
+  original's vision model can still "read" the text; we keep replacement characters
+
+### Which one to pick
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Bulk text-document ingestion, RAG chunking, CI/edge | **docling (Go)**: milliseconds, zero deps |
+| High-fidelity review, scan-heavy, image table/formula dense | Python Docling, or docling (Go) + LLM hooks |
+| Both | Dual engine: Go as the baseline & router, Python/models for the hard pages |
+
+> One sentence: **structures the rules can determine are pushed to the limit in pure Go; what
+> rules cannot determine falls back honestly with model hooks ready — we never guess.**
 
 ## Repository layout
 
