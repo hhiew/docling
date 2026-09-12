@@ -216,6 +216,45 @@ table and an SVG preview respectively, with the chart's cell references fully pr
   <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx source" width="420"/>
 </p>
 
+### Office · Microsoft official test documents (complex objects)
+
+Samples taken from Microsoft's Open XML SDK official test assets (MIT licensed) — documents
+produced by real Office 2007+ applications:
+
+<p align="center">
+  <img src="assets/examples/real-word-chart.png" alt="Word native charts" width="300"/>
+  <img src="assets/examples/real-ppt-3dpie.png" alt="PPT 3D pie" width="300"/>
+  <img src="assets/examples/real-xlsx-ole.png" alt="Excel OLE objects" width="300"/>
+</p>
+
+Recognized Markdown (excerpt): chart data from the **Word multi-series column charts** and the
+**PPT 3D pie** is fully restored as searchable tables plus SVG previews; OLE embedded objects in
+the Excel workbook are recorded by semantic classification (never executed):
+
+````markdown
+| 类别 | Series 1 | Series 2 | Series 3 |
+| --- | --- | --- | --- |
+| Category 1 | 4.3 | 2.4 | 2 |
+| Category 2 | 2.5 | 4.4 |  |
+| Category 3 | 3.5 | 1.8 | 3 |
+| Category 4 | 4.5 | 2.8 | 5 |
+````
+
+### Real-world samples per format
+
+| Format | Real sample | Source |
+|--------|-------------|--------|
+| PDF | 196-page master's thesis + 10-page two-column paper | Victoria University of Wellington (public thesis) |
+| Word | official test document with 6 native charts | Microsoft Open XML SDK test assets (MIT) |
+| PPT | official test deck with a 3D pie chart | Microsoft Open XML SDK test assets (MIT) |
+| Excel | workbook with OLE embedded objects | Microsoft Open XML SDK test assets (MIT) |
+| EML | real MIME multipart bounce mail | CPython stdlib test data (PSF licensed) |
+| Plain text | The Adventures of Tom Sawyer, full book (380KB) | public domain (pdfcpu testdata) |
+| CSV | x86 instruction set table (3,700+ rows) | golang.org/x/arch |
+| Markdown | goldmark project README | yuin/goldmark (MIT) |
+| AsciiDoc | lzip-go project CHANGELOG | sorairolake/lzip-go (CC-BY-4.0) |
+| HTML | Go net/http package doc page (godoc) | Go official docs snapshot |
+
 ### PDF · real academic papers
 
 A 196-page master's thesis, "Evaluating the GO Programming Language with Design Patterns"

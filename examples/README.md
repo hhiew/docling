@@ -16,8 +16,16 @@
   艺术字、OLE 嵌入对象、OMML 公式（LaTeX 输出）、原生图表（数据表格 + SVG 语义预览）、
   母版继承与组合形状。全部为代码构造的完整合法 OOXML 包，可直接用 Office/LibreOffice
   打开与 `*.expected.md` 并排对照。
-- `pdf/design-patterns-thesis.pdf`（196 页硕士论文）与 `pdf/gohotdraw-paper.pdf`
-  （10 页双栏会议论文）：真实学术 PDF，覆盖长文档、双栏阅读顺序与真实字体编码。
+- 真实世界样本（源文件不参与 `-update` 重建，仅刷新期望输出）：
+  - `pdf/design-patterns-thesis.pdf`（196 页硕士论文）、`pdf/gohotdraw-paper.pdf`
+    （10 页双栏会议论文）——真实学术 PDF，覆盖长文档、双栏阅读顺序与真实字体编码；
+  - `docx/real-charts.docx`、`pptx/real-3dpie.pptx`、`xlsx/real-ole.xlsx`——微软
+    Open XML SDK 官方测试资产（MIT），真实 Office 生成的原生图表与 OLE 对象；
+  - `eml/real-bounce.eml`——CPython 标准库的真实 MIME 多段邮件；
+  - `txt/tom-sawyer.txt`——《汤姆·索亚历险记》全书（380KB 公版书）；
+  - `csv/x86-instructions.csv`——x86 指令集描述表（3700+ 行）；
+  - `markdown/goldmark-readme.md`、`adoc/lzip-changelog.adoc`、`html/go-homepage.html`
+    ——真实开源项目文档与 Go 官方包文档页。
 
 ## 回归测试
 

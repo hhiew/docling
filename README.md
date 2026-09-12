@@ -218,6 +218,42 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
   <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx 原文" width="420"/>
 </p>
 
+### Office · 微软官方测试文档(含复杂对象)
+
+样例取自微软 Open XML SDK 官方测试资产(MIT 授权)——真实 Office 2007+ 生成的文档:
+
+<p align="center">
+  <img src="assets/examples/real-word-chart.png" alt="Word 原生图表" width="300"/>
+  <img src="assets/examples/real-ppt-3dpie.png" alt="PPT 3D 饼图" width="300"/>
+  <img src="assets/examples/real-xlsx-ole.png" alt="Excel OLE 对象" width="300"/>
+</p>
+
+识别后的 Markdown(节选):**Word 多系列柱状图**与 **PPT 3D 饼图**的图表数据完整还原为可检索表格 + SVG 预览,Excel 工作簿中的 OLE 嵌入对象按语义分类记录(不执行):
+
+````markdown
+| 类别 | Series 1 | Series 2 | Series 3 |
+| --- | --- | --- | --- |
+| Category 1 | 4.3 | 2.4 | 2 |
+| Category 2 | 2.5 | 4.4 |  |
+| Category 3 | 3.5 | 1.8 | 3 |
+| Category 4 | 4.5 | 2.8 | 5 |
+````
+
+### 各格式真实样例总览
+
+| 格式 | 真实样本 | 来源 |
+|------|----------|------|
+| PDF | 196 页硕士论文 + 10 页双栏会议论文 | Victoria University of Wellington(公开论文) |
+| Word | 含 6 个原生图表的官方测试文档 | 微软 Open XML SDK 测试资产(MIT) |
+| PPT | 含 3D 饼图的官方测试演示 | 微软 Open XML SDK 测试资产(MIT) |
+| Excel | 含 OLE 嵌入对象的工作簿 | 微软 Open XML SDK 测试资产(MIT) |
+| EML | 真实 MIME 多段退信邮件 | CPython 标准库测试数据(PSF 授权) |
+| 纯文本 | 《汤姆·索亚历险记》全书(380KB) | 公版书(pdfcpu testdata) |
+| CSV | x86 指令集描述表(3700+ 行) | golang.org/x/arch |
+| Markdown | goldmark 项目 README | yuin/goldmark(MIT) |
+| AsciiDoc | lzip-go 项目 CHANGELOG | sorairolake/lzip-go(CC-BY-4.0) |
+| HTML | Go net/http 包文档页(godoc) | Go 官方文档快照 |
+
 ### PDF · 真实学术论文
 
 196 页硕士论文《Evaluating the GO Programming Language with Design Patterns》(Victoria University of Wellington, 2010):
