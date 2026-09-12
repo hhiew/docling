@@ -45,8 +45,11 @@ func examplesSources() []examplesSource {
 		{dir: "eml", filename: "sample.eml", build: buildExampleEML},
 		{dir: "pdf", filename: "sample.pdf", build: buildExamplePDF},
 		{dir: "docx", filename: "sample.docx", build: buildExampleDocx},
+		{dir: "docx", filename: "rich.docx", build: buildRichExampleDocx},
 		{dir: "xlsx", filename: "sample.xlsx", build: buildExampleXLSX},
+		{dir: "xlsx", filename: "rich-chart.xlsx", build: buildRichExampleXLSX},
 		{dir: "pptx", filename: "sample.pptx", build: buildExamplePPTXGolden},
+		{dir: "pptx", filename: "rich.pptx", build: buildRichExamplePPTX},
 	}
 }
 
@@ -70,25 +73,39 @@ func TestExamplesGolden(t *testing.T) {
 					t.Fatalf("read examples dir: %v", err)
 				}
 			}
+			// -update 时确保合成样例源文件存在:canonical sample.* 每次重建,
+			// 其余合成样例(rich-*)仅首次生成、之后与真实样本同等对待。
+			if *updateExamples {
+				path := filepath.Join(dir, source.filename)
+				_, statErr := os.Stat(path)
+				isCanonical := strings.HasPrefix(source.filename, "sample.")
+				if isCanonical || os.IsNotExist(statErr) {
+					if err := os.WriteFile(path, source.build(t), 0o644); err != nil {
+						t.Fatalf("write sample source: %v", err)
+					}
+				}
+				entries, err = os.ReadDir(dir)
+				if err != nil {
+					t.Fatalf("re-read examples dir: %v", err)
+				}
+			}
+			sourceExt := filepath.Ext(source.filename)
 			for _, entry := range entries {
 				name := entry.Name()
 				if entry.IsDir() || strings.HasSuffix(name, ".expected.md") ||
-					!strings.HasSuffix(name, "."+strings.TrimPrefix(source.filename, "sample.")) {
+					filepath.Ext(name) != sourceExt {
 					continue
 				}
-				ext := filepath.Ext(name)
-				expectedPath := filepath.Join(dir, strings.TrimSuffix(name, ext)+".expected.md")
+				expectedPath := filepath.Join(dir, strings.TrimSuffix(name, sourceExt)+".expected.md")
 				data, readErr := os.ReadFile(filepath.Join(dir, name))
 				if readErr != nil {
 					t.Fatalf("读取样例失败: %v", readErr)
 				}
 				if *updateExamples {
-					if name == source.filename {
-						fresh := source.build(t)
-						if err := os.WriteFile(filepath.Join(dir, name), fresh, 0o644); err != nil {
-							t.Fatalf("write sample source: %v", err)
-						}
-						data = fresh
+					// canonical sample.* 已在上方重建;此处 data 重新读取以保证
+					// 与磁盘内容一致(rich-*/真实样本源文件不变)。
+					if refreshed, err := os.ReadFile(filepath.Join(dir, name)); err == nil {
+						data = refreshed
 					}
 					markdown, parseErr := ParseByExtToMarkdown(name, data)
 					if parseErr != nil {

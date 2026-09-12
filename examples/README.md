@@ -9,6 +9,14 @@
 
 并排对照两个文件，即可直观了解该格式的转换效果。
 
+## 样例类型
+
+- `sample.<ext>`：最小典型样例，展示基础结构映射；
+- `rich.docx` / `rich.pptx` / `rich-chart.xlsx`：复杂对象样例 —— SmartArt 流程图、
+  艺术字、OLE 嵌入对象、OMML 公式（LaTeX 输出）、原生图表（数据表格 + SVG 语义预览）、
+  母版继承与组合形状；
+- `pdf/schmager-plateau10.pdf`、`xlsx/Book1.xlsx`：真实世界文档（学术论文、业务透视工作簿）。
+
 ## 回归测试
 
 ```bash
@@ -23,7 +31,8 @@ go test ./... -run TestExamplesGolden -update    # 解析行为变化后重建�
 
 ## 新增格式样例
 
-1. 在 `examples_test.go` 的 `examplesSources()` 中追加一行（目录名、源文件名、构造器）；
+1. 在 `examples_test.go` 的 `examplesSources()` 中追加一行（目录名、源文件名、构造器），
+   代码构造的合成样例同时登记到 `syntheticExamplesFor`（真实样本不需要）；
 2. 实现对应的构造函数；
 3. 运行 `-update` 生成对照文件，检查 `sample.expected.md` 内容符合预期后一并提交。
 

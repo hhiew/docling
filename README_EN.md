@@ -20,44 +20,9 @@ The mainstream approach to modern document parsing is a Python model pipeline (e
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph INPUT["📥 Input layer"]
-        PDF["PDF"]
-        OFFICE["Word / PPT / Excel"]
-        WEB["HTML / Markdown / AsciiDoc"]
-        MAIL["EML / CSV / plain text"]
-        IMG["Images PNG/JPEG/BMP/WEBP"]
-    end
-
-    subgraph ENGINE["⚙️ Parsing engine (single pure-Go binary)"]
-        RULES["Rule engine<br/>layout / tables / reading order / font recovery"]
-        PDFENC["internal/pdfenc<br/>CMap·SFNT / JPX / JBIG2 / soft masks"]
-        OOXML["internal/ooxml<br/>Strict→Transitional normalization"]
-        SERVE["Optional second engine<br/>docling-serve"]
-    end
-
-    subgraph LLM["🧠 LLM side path (routed per page)"]
-        OCR["OCRHook"]
-        VISUAL["PDFVisualHook"]
-    end
-
-    subgraph OUTPUT["📤 Output layer"]
-        MODEL["DoclingDocument<br/>(official 1.10 protocol)"]
-        EXPORT["Markdown / HTML / JSON / content_list"]
-        CHUNK["Hierarchical / Hybrid / KB chunking"]
-    end
-
-    INPUT --> ENGINE
-    RULES --> MODEL
-    PDFENC --> RULES
-    OOXML --> RULES
-    SERVE --> MODEL
-    ENGINE -- "quality signals: scanned/garbled/image tables/formula-dense" --> LLM
-    LLM -- "strict validation + geometric merge" --> MODEL
-    MODEL --> EXPORT
-    MODEL --> CHUNK
-```
+<p align="center">
+  <img src="assets/architecture.svg" alt="docling architecture" width="100%"/>
+</p>
 
 > The parser computes per-page quality signals (garbage ratio, table candidates, formula density,
 > column ambiguity) and routes only the hard pages to your LLM. Model results are strictly
@@ -193,11 +158,18 @@ failures keep the pure-Go result — **model enhancement never breaks existing o
 
 ## examples: real documents, side by side
 
-[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format,
-including **real-world documents**: a research paper PDF
-([schmager-plateau10.pdf](examples/pdf/schmager-plateau10.pdf), evaluating Go with design
-patterns) and a business pivot workbook ([Book1.xlsx](examples/xlsx/Book1.xlsx), IBM monitor
-sales data).
+[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format:
+
+- `sample.<ext>` / `sample.expected.md`: minimal typical samples
+- `rich.docx` / `rich.pptx` / `rich-chart.xlsx` / `rich.expected.md`: **complex-object samples** —
+  the DOCX carries an OMML formula (exported as LaTeX), a SmartArt process diagram, WordArt and
+  an OLE embedded object; the PPTX carries a native chart, master inheritance and grouped shapes;
+  the XLSX carries a native line chart (chart data becomes a searchable table plus an SVG preview)
+- `schmager-plateau10.pdf` / `Book1.xlsx`: real-world documents (a research paper and a business pivot workbook)
+
+Open `rich.docx` and `rich.expected.md` side by side to see how a SmartArt flow, the
+`{E}^{2}=mc` formula and WordArt are parsed into Markdown; regression tests keep the corpus in
+sync with the parser.
 
 ```bash
 go test ./... -run TestExamplesGolden            # strict verbatim regression

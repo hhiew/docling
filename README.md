@@ -20,44 +20,9 @@
 
 ## 架构
 
-```mermaid
-flowchart TB
-    subgraph INPUT["📥 输入层"]
-        PDF["PDF"]
-        OFFICE["Word / PPT / Excel"]
-        WEB["HTML / Markdown / AsciiDoc"]
-        MAIL["EML / CSV / 纯文本"]
-        IMG["图片 PNG/JPEG/BMP/WEBP"]
-    end
-
-    subgraph ENGINE["⚙️ 解析引擎层(纯 Go 单二进制)"]
-        RULES["规则引擎<br/>版面 / 表格 / 多栏 / 字体恢复"]
-        PDFENC["internal/pdfenc<br/>CMap·SFNT / JPX / JBIG2 / 软蒙版"]
-        OOXML["internal/ooxml<br/>Strict→Transitional 归一化"]
-        SERVE["可选第二引擎<br/>docling-serve"]
-    end
-
-    subgraph LLM["🧠 大模型旁路(按页路由)"]
-        OCR["OCRHook"]
-        VISUAL["PDFVisualHook"]
-    end
-
-    subgraph OUTPUT["📤 输出层"]
-        MODEL["DoclingDocument<br/>(官方 1.10 协议)"]
-        EXPORT["Markdown / HTML / JSON / content_list"]
-        CHUNK["层级分块 / Hybrid / 知识库分块"]
-    end
-
-    INPUT --> ENGINE
-    RULES --> MODEL
-    PDFENC --> RULES
-    OOXML --> RULES
-    SERVE --> MODEL
-    ENGINE -- "质量信号:扫描/乱码/图片表格/公式密集" --> LLM
-    LLM -- "强校验 + 几何去重合并" --> MODEL
-    MODEL --> EXPORT
-    MODEL --> CHUNK
-```
+<p align="center">
+  <img src="assets/architecture.svg" alt="docling 架构图" width="100%"/>
+</p>
 
 > 解析器对每页计算质量信号(乱码率、表格候选、公式密度、栏位歧义),只有命中的疑难页才路由给大模型;模型返回结果经强校验与规则文本几何去重合并,失败保留纯 Go 结果——**模型只用在刀刃上,增强永远不破坏既有输出**。
 
@@ -188,7 +153,13 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 
 ## examples:真实文档的转换对照
 
-[`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照,包括**真实世界文档**:学术论文 PDF([schmager-plateau10.pdf](examples/pdf/schmager-plateau10.pdf),Go 设计模式评估论文)与业务透视工作簿([Book1.xlsx](examples/xlsx/Book1.xlsx),IBM 显示器销售数据)。
+[`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照:
+
+- `sample.<ext>` / `sample.expected.md`:最小典型样例
+- `rich.docx` / `rich.pptx` / `rich-chart.xlsx` / `rich.expected.md`:**复杂对象样例** —— DOCX 含 OMML 公式(LaTeX 输出)、SmartArt 流程图、艺术字与 OLE 嵌入对象;PPTX 含原生图表、母版继承与组合形状;XLSX 含原生折线图(图表数据转为可检索表格 + SVG 语义预览)
+- `schmager-plateau10.pdf` / `Book1.xlsx`:真实世界文档(学术论文、业务透视工作簿)
+
+并排打开 `rich.docx` 与 `rich.expected.md`,即可看到 SmartArt 流程、`{E}^{2}=mc` 公式与艺术字"年度规划"如何被解析为 Markdown;回归测试保证对照集与解析器行为一致:
 
 ```bash
 go test ./... -run TestExamplesGolden            # 严格逐字回归
