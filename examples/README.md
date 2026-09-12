@@ -14,8 +14,8 @@
 - `sample.<ext>`：最小典型样例，展示基础结构映射；
 - `rich.docx` / `rich.pptx` / `rich-chart.xlsx`：复杂对象样例 —— SmartArt 流程图、
   艺术字、OLE 嵌入对象、OMML 公式（LaTeX 输出）、原生图表（数据表格 + SVG 语义预览）、
-  母版继承与组合形状；
-- `pdf/schmager-plateau10.pdf`、`xlsx/Book1.xlsx`：真实世界文档（学术论文、业务透视工作簿）。
+  母版继承与组合形状。全部为代码构造的完整合法 OOXML 包，可直接用 Office/LibreOffice
+  打开与 `*.expected.md` 并排对照。
 
 ## 回归测试
 

@@ -151,17 +151,74 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 
 组件对钩子返回值做强校验(标签、置信度、bbox、表格拓扑、防拒答/防复读),无效结果自动重试一次;有效结果与规则文本按几何去重合并,失败则保留纯 Go 结果——**模型增强永远不破坏既有输出**。
 
-## examples:真实文档的转换对照
+## examples:成果示例(原文 ↔ 识别后的 Markdown)
 
-[`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照:
+[`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照,全部由代码构造、可再生产。以下展示复杂对象的实际成果:
 
-- `sample.<ext>` / `sample.expected.md`:最小典型样例
-- `rich.docx` / `rich.pptx` / `rich-chart.xlsx` / `rich.expected.md`:**复杂对象样例** —— DOCX 含 OMML 公式(LaTeX 输出)、SmartArt 流程图、艺术字与 OLE 嵌入对象;PPTX 含原生图表、母版继承与组合形状;XLSX 含原生折线图(图表数据转为可检索表格 + SVG 语义预览)
-- `schmager-plateau10.pdf` / `Book1.xlsx`:真实世界文档(学术论文、业务透视工作簿)
+### Word · rich.docx
 
-并排打开 `rich.docx` 与 `rich.expected.md`,即可看到 SmartArt 流程、`{E}^{2}=mc` 公式与艺术字"年度规划"如何被解析为 Markdown;回归测试保证对照集与解析器行为一致。
+原文(含 OMML 公式、SmartArt 流程、艺术字与 OLE 嵌入对象):
 
-**亲自跑一遍**(无需任何外部服务):
+<p align="center">
+  <img src="assets/examples/rich-docx.png" alt="rich.docx 原文" width="420"/>
+</p>
+
+识别后的 Markdown(节选):
+
+````markdown
+# 产品评审报告
+
+本报告汇总评审结论、关键公式与流程图,供后续验收引用。
+
+能量换算关系:{E}^{2}=mc
+
+![提交申请
+技术评审
+发布上线](data:image/svg+xml;base64,...)   ← SmartArt 流程图转语义 SVG,节点文字进入可检索 caption
+
+![年度规划](data:image/svg+xml;base64,...)  ← 艺术字
+
+![Excel.Sheet.12](data:image/svg+xml;base64,...)  ← OLE 嵌入对象(不执行,仅记录)
+````
+
+### PPT · rich.pptx
+
+原文(标题、层级列表、跨列合并表格与原生图表):
+
+<p align="center">
+  <img src="assets/examples/rich-pptx.png" alt="rich.pptx 原文" width="420"/>
+</p>
+
+识别后的 Markdown(节选):标题、列表、表格逐项还原;原生图表转为"SVG 语义预览 + 可检索数据表格"双重输出:
+
+````markdown
+# 演示文稿标题
+
+- 要点一
+  - 子要点
+- 要点二
+
+| 表头A |  |
+| --- | --- |
+| 跨列内容 | 跨列内容 |
+
+![](data:image/svg+xml;base64,...)   ← 图表 SVG 预览
+
+| 类别 | 销量 |
+| --- | --- |
+| 1月 | 120 |
+| 2月 | 186 |
+````
+
+### Excel · rich-chart.xlsx
+
+原生折线图工作簿:数据表与图表分别还原为可检索表格与 SVG 预览,图表引用的单元格数据完整保留。
+
+<p align="center">
+  <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx 原文" width="420"/>
+</p>
+
+### 亲自跑一遍(无需任何外部服务)
 
 ```bash
 git clone https://github.com/unitedrhino/docling
@@ -178,10 +235,6 @@ md, err := docling.ParseByExtToMarkdown("rich.docx", data)
 fmt.Println(md) // 公式 LaTeX、SmartArt 流程 SVG、艺术字与 OLE 分类一目了然
 ```
 
-```bash
-go test ./... -run TestExamplesGolden            # 严格逐字回归
-go test ./... -run TestExamplesGolden -update    # 解析行为变化后一键重建
-```
 
 ## 与 Docling 官方的关系
 

@@ -156,22 +156,67 @@ Hook results are strictly validated (labels, confidence, bboxes, table topology,
 anti-repetition) with one automatic retry; valid objects are merged with rule text by geometry and
 failures keep the pure-Go result — **model enhancement never breaks existing output**.
 
-## examples: real documents, side by side
+## examples: results showcase (source ↔ recognized Markdown)
 
-[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format:
+[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format,
+all built from code and reproducible. Below are the actual results on complex objects:
 
-- `sample.<ext>` / `sample.expected.md`: minimal typical samples
-- `rich.docx` / `rich.pptx` / `rich-chart.xlsx` / `rich.expected.md`: **complex-object samples** —
-  the DOCX carries an OMML formula (exported as LaTeX), a SmartArt process diagram, WordArt and
-  an OLE embedded object; the PPTX carries a native chart, master inheritance and grouped shapes;
-  the XLSX carries a native line chart (chart data becomes a searchable table plus an SVG preview)
-- `schmager-plateau10.pdf` / `Book1.xlsx`: real-world documents (a research paper and a business pivot workbook)
+### Word · rich.docx
 
-Open `rich.docx` and `rich.expected.md` side by side to see how a SmartArt flow, the
-`{E}^{2}=mc` formula and WordArt are parsed into Markdown; regression tests keep the corpus in
-sync with the parser.
+Source (OMML formula, SmartArt process, WordArt and an OLE embedded object):
 
-**Run it yourself** (no external services needed):
+<p align="center">
+  <img src="assets/examples/rich-docx.png" alt="rich.docx source" width="420"/>
+</p>
+
+Recognized Markdown (excerpt):
+
+````markdown
+能量换算关系:{E}^{2}=mc
+
+![提交申请
+技术评审
+发布上线](data:image/svg+xml;base64,...)   ← SmartArt flow → semantic SVG, node text becomes searchable captions
+
+![年度规划](data:image/svg+xml;base64,...)  ← WordArt
+
+![Excel.Sheet.12](data:image/svg+xml;base64,...)  ← OLE embedded object (recorded, never executed)
+````
+
+### PPT · rich.pptx
+
+Source (title, nested lists, column-span table and a native chart):
+
+<p align="center">
+  <img src="assets/examples/rich-pptx.png" alt="rich.pptx source" width="420"/>
+</p>
+
+Recognized Markdown (excerpt): title, lists and table restored item by item; the native chart
+becomes both an SVG semantic preview and a searchable data table:
+
+````markdown
+| 表头A |  |
+| --- | --- |
+| 跨列内容 | 跨列内容 |
+
+![](data:image/svg+xml;base64,...)   ← chart SVG preview
+
+| 类别 | 销量 |
+| --- | --- |
+| 1月 | 120 |
+| 2月 | 186 |
+````
+
+### Excel · rich-chart.xlsx
+
+A workbook with a native line chart: the data sheet and the chart are restored as a searchable
+table and an SVG preview respectively, with the chart's cell references fully preserved.
+
+<p align="center">
+  <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx source" width="420"/>
+</p>
+
+### Run it yourself (no external services needed)
 
 ```bash
 git clone https://github.com/unitedrhino/docling
@@ -188,10 +233,6 @@ md, err := docling.ParseByExtToMarkdown("rich.docx", data)
 fmt.Println(md) // formula LaTeX, SmartArt flow SVG, WordArt & OLE classification at a glance
 ```
 
-```bash
-go test ./... -run TestExamplesGolden            # strict verbatim regression
-go test ./... -run TestExamplesGolden -update    # rebuild the corpus after parser changes
-```
 
 ## Relationship to Docling
 
