@@ -18,6 +18,52 @@ The mainstream approach to modern document parsing is a Python model pipeline (e
 - 🔒 **Never fabricates**: content the parser is unsure about keeps its raw signal and falls back to vision, instead of guessing a structure
 - 🤝 **Ecosystem compatible**: output is fully aligned with the official Docling protocol, so existing Docling downstream tooling plugs right in
 
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph INPUT["📥 Input layer"]
+        PDF["PDF"]
+        OFFICE["Word / PPT / Excel"]
+        WEB["HTML / Markdown / AsciiDoc"]
+        MAIL["EML / CSV / plain text"]
+        IMG["Images PNG/JPEG/BMP/WEBP"]
+    end
+
+    subgraph ENGINE["⚙️ Parsing engine (single pure-Go binary)"]
+        RULES["Rule engine<br/>layout / tables / reading order / font recovery"]
+        PDFENC["internal/pdfenc<br/>CMap·SFNT / JPX / JBIG2 / soft masks"]
+        OOXML["internal/ooxml<br/>Strict→Transitional normalization"]
+        SERVE["Optional second engine<br/>docling-serve"]
+    end
+
+    subgraph LLM["🧠 LLM side path (routed per page)"]
+        OCR["OCRHook"]
+        VISUAL["PDFVisualHook"]
+    end
+
+    subgraph OUTPUT["📤 Output layer"]
+        MODEL["DoclingDocument<br/>(official 1.10 protocol)"]
+        EXPORT["Markdown / HTML / JSON / content_list"]
+        CHUNK["Hierarchical / Hybrid / KB chunking"]
+    end
+
+    INPUT --> ENGINE
+    RULES --> MODEL
+    PDFENC --> RULES
+    OOXML --> RULES
+    SERVE --> MODEL
+    ENGINE -- "quality signals: scanned/garbled/image tables/formula-dense" --> LLM
+    LLM -- "strict validation + geometric merge" --> MODEL
+    MODEL --> EXPORT
+    MODEL --> CHUNK
+```
+
+> The parser computes per-page quality signals (garbage ratio, table candidates, formula density,
+> column ambiguity) and routes only the hard pages to your LLM. Model results are strictly
+> validated and merged with rule text by geometry; failures keep the pure-Go output —
+> **the model is spent only where it matters and never breaks existing results**.
+
 ## Benchmarks
 
 Same machine, same real-world PDFs (Apache-2.0 test samples). `docling` (Go, no models) vs Docling `2.x` (CPU model pipeline, timed in-process after warm-up):
@@ -194,6 +240,18 @@ docling/
 - [gobig2](https://github.com/dkrisman/gobig2) (Apache-2.0) — pure Go JBIG2 decoding
 - [goldmark](https://github.com/yuin/goldmark) (MIT), [golang.org/x/net](https://pkg.go.dev/golang.org/x/net), [golang.org/x/text](https://pkg.go.dev/golang.org/x/text), [golang.org/x/image](https://pkg.go.dev/golang.org/x/image)
 - [Docling](https://github.com/docling-project/docling) (MIT) — reference for the output protocol and chunking semantics
+
+## Community
+
+Join us through any of these channels:
+
+- Issues / PRs: this repository
+- Website: [https://www.unitedrhino.com/](https://www.unitedrhino.com/) ｜ Docs: [https://doc.unitedrhino.com/](https://doc.unitedrhino.com/)
+- Scan the QR code to follow our WeChat official account for release notes and document-parsing deep dives — let's build together:
+
+<p align="center">
+  <img src="assets/wechat-official-account.jpg" alt="WeChat official account QR code" width="200"/>
+</p>
 
 ## License
 

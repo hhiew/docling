@@ -18,6 +18,49 @@
 - 🔒 **不伪造结果**:解析器不确定的内容保留原始信号进入视觉回退,而不是猜一个结构
 - 🤝 **生态兼容**:输出与 Docling 官方协议完全对齐,已有的 Docling 下游工具链无缝衔接
 
+## 架构
+
+```mermaid
+flowchart TB
+    subgraph INPUT["📥 输入层"]
+        PDF["PDF"]
+        OFFICE["Word / PPT / Excel"]
+        WEB["HTML / Markdown / AsciiDoc"]
+        MAIL["EML / CSV / 纯文本"]
+        IMG["图片 PNG/JPEG/BMP/WEBP"]
+    end
+
+    subgraph ENGINE["⚙️ 解析引擎层(纯 Go 单二进制)"]
+        RULES["规则引擎<br/>版面 / 表格 / 多栏 / 字体恢复"]
+        PDFENC["internal/pdfenc<br/>CMap·SFNT / JPX / JBIG2 / 软蒙版"]
+        OOXML["internal/ooxml<br/>Strict→Transitional 归一化"]
+        SERVE["可选第二引擎<br/>docling-serve"]
+    end
+
+    subgraph LLM["🧠 大模型旁路(按页路由)"]
+        OCR["OCRHook"]
+        VISUAL["PDFVisualHook"]
+    end
+
+    subgraph OUTPUT["📤 输出层"]
+        MODEL["DoclingDocument<br/>(官方 1.10 协议)"]
+        EXPORT["Markdown / HTML / JSON / content_list"]
+        CHUNK["层级分块 / Hybrid / 知识库分块"]
+    end
+
+    INPUT --> ENGINE
+    RULES --> MODEL
+    PDFENC --> RULES
+    OOXML --> RULES
+    SERVE --> MODEL
+    ENGINE -- "质量信号:扫描/乱码/图片表格/公式密集" --> LLM
+    LLM -- "强校验 + 几何去重合并" --> MODEL
+    MODEL --> EXPORT
+    MODEL --> CHUNK
+```
+
+> 解析器对每页计算质量信号(乱码率、表格候选、公式密度、栏位歧义),只有命中的疑难页才路由给大模型;模型返回结果经强校验与规则文本几何去重合并,失败保留纯 Go 结果——**模型只用在刀刃上,增强永远不破坏既有输出**。
+
 ## 性能实测
 
 同一台机器、同一批真实 PDF(Apache-2.0 测试样本),`docling`(Go,无模型)对 Docling `2.x`(CPU 模型管线,同进程预热后计时):
@@ -183,6 +226,18 @@ docling/
 - [gobig2](https://github.com/dkrisman/gobig2)(Apache-2.0)— 纯 Go JBIG2 解码
 - [goldmark](https://github.com/yuin/goldmark)(MIT)、[golang.org/x/net](https://pkg.go.dev/golang.org/x/net)、[golang.org/x/text](https://pkg.go.dev/golang.org/x/text)、[golang.org/x/image](https://pkg.go.dev/golang.org/x/image)
 - [Docling](https://github.com/docling-project/docling)(MIT)— 输出协议与分块语义的参考实现
+
+## 社区与共建
+
+欢迎通过任意方式参与共建:
+
+- 提 Issue / PR:本仓库
+- 官网:[https://www.unitedrhino.com/](https://www.unitedrhino.com/) ｜ 文档站:[https://doc.unitedrhino.com/](https://doc.unitedrhino.com/)
+- 扫码关注公众号,获取版本更新与文档解析实践分享,一起共建:
+
+<p align="center">
+  <img src="assets/wechat-official-account.jpg" alt="微信公众号二维码" width="200"/>
+</p>
 
 ## License
 
