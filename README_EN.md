@@ -8,6 +8,23 @@ English | [简体中文](README.md)
 
 > Naming note: this repository is a pure-Go implementation of the [Docling](https://github.com/docling-project/docling) protocol. The Go package is named `docling` and shares the same document model as the Python reference implementation.
 
+## Why this library exists
+
+One sentence: **make any document reliably readable by LLMs — without dragging a Python model
+service along.**
+
+Before feeding documents to an LLM/RAG pipeline, four questions must be answered:
+
+| Pain point | docling (Go)'s answer |
+|------------|------------------------|
+| Heterogeneous formats: PDF, Office, web, email and images each need their own parsing stack, and stitching them together is expensive to maintain | One unified DoclingDocument model: 12 formats, one entry point, one API, aligned with the official protocol |
+| High-quality options (Python model pipelines) are heavy: a Python service plus multi-GB layout/table models — hard to run for bulk ingestion, CI and edge nodes | Pure Go, single binary, `go get` and go; millisecond-to-second parsing with zero external services |
+| All-model is slow and costly; all-rules caps the quality | Hybrid architecture: a rule-engine baseline, with scanned pages, image tables and formula-dense pages auto-routed to your LLM by quality signals — the model is spent only where it matters |
+| Model transcription "hallucinates" data, so ingested results cannot be trusted | Never fabricate: chart data is restored exactly from the document's own caches; content the rules cannot determine keeps its raw signal explicitly instead of a guess |
+
+If your scenario is high-fidelity review or scan-heavy corpora, the Python original remains the
+first choice — see the [gaps section](#gaps-vs-python-docling-stated-honestly) below.
+
 ## Why docling (Go)
 
 The mainstream approach to modern document parsing is a Python model pipeline (e.g. Docling): high quality, but it needs a Python service, loads layout models, and can take tens of seconds per document. **docling (Go) makes a different engineering trade-off**:
