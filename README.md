@@ -218,6 +218,43 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
   <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx 原文" width="420"/>
 </p>
 
+### PDF · 真实学术论文
+
+196 页硕士论文《Evaluating the GO Programming Language with Design Patterns》(Victoria University of Wellington, 2010):
+
+<p align="center">
+  <img src="assets/examples/thesis.png" alt="论文原文首页" width="380"/>
+  <img src="assets/examples/gohotdraw.png" alt="GoHotDraw 双栏论文" width="380"/>
+</p>
+
+识别后的 Markdown(节选,完整对照见 [examples/pdf/design-patterns-thesis.expected.md](examples/pdf/design-patterns-thesis.expected.md)):
+
+````markdown
+## Evaluating the GO
+
+## Programming Language with
+
+## Design Patterns
+
+by
+
+### Frank Schmager
+
+A thesis
+submitted to the Victoria University ofWellington
+in partial fulfilment of the
+requirements for the degree of
+Master of Science
+in Computer Science.
+
+### Abstract
+
+GO is a newobject-oriented programming language developed at Google
+by Rob Pike, Ken Thompson, and others. ...
+````
+
+另一份是同一作者的 10 页**双栏会议论文**[gohotdraw-paper.pdf](examples/pdf/gohotdraw-paper.pdf)(GoHotDraw 图形框架),用于展示双栏阅读顺序的还原效果。两份论文共 200+ 页,纯 Go 解析约 30 秒完成,golden 回归即真实压测。
+
 ### 亲自跑一遍(无需任何外部服务)
 
 ```bash

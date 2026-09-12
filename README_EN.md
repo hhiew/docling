@@ -216,6 +216,45 @@ table and an SVG preview respectively, with the chart's cell references fully pr
   <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx source" width="420"/>
 </p>
 
+### PDF · real academic papers
+
+A 196-page master's thesis, "Evaluating the GO Programming Language with Design Patterns"
+(Victoria University of Wellington, 2010):
+
+<p align="center">
+  <img src="assets/examples/thesis.png" alt="thesis first page" width="380"/>
+  <img src="assets/examples/gohotdraw.png" alt="GoHotDraw two-column paper" width="380"/>
+</p>
+
+Recognized Markdown (excerpt; full corpus at
+[examples/pdf/design-patterns-thesis.expected.md](examples/pdf/design-patterns-thesis.expected.md)):
+
+````markdown
+## Evaluating the GO
+
+## Programming Language with
+
+## Design Patterns
+
+by
+
+### Frank Schmager
+
+A thesis
+submitted to the Victoria University ofWellington
+...
+
+### Abstract
+
+GO is a newobject-oriented programming language developed at Google
+by Rob Pike, Ken Thompson, and others. ...
+````
+
+The second one is a 10-page **two-column conference paper** by the same author
+([gohotdraw-paper.pdf](examples/pdf/gohotdraw-paper.pdf), the GoHotDraw drawing framework),
+demonstrating multi-column reading-order recovery. The two papers total 200+ pages and parse
+in ~30s in pure Go — the golden regression doubles as a real-world stress test.
+
 ### Run it yourself (no external services needed)
 
 ```bash

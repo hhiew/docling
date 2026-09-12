@@ -16,6 +16,8 @@
   艺术字、OLE 嵌入对象、OMML 公式（LaTeX 输出）、原生图表（数据表格 + SVG 语义预览）、
   母版继承与组合形状。全部为代码构造的完整合法 OOXML 包，可直接用 Office/LibreOffice
   打开与 `*.expected.md` 并排对照。
+- `pdf/design-patterns-thesis.pdf`（196 页硕士论文）与 `pdf/gohotdraw-paper.pdf`
+  （10 页双栏会议论文）：真实学术 PDF，覆盖长文档、双栏阅读顺序与真实字体编码。
 
 ## 回归测试
 
