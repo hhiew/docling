@@ -159,7 +159,24 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 - `rich.docx` / `rich.pptx` / `rich-chart.xlsx` / `rich.expected.md`:**复杂对象样例** —— DOCX 含 OMML 公式(LaTeX 输出)、SmartArt 流程图、艺术字与 OLE 嵌入对象;PPTX 含原生图表、母版继承与组合形状;XLSX 含原生折线图(图表数据转为可检索表格 + SVG 语义预览)
 - `schmager-plateau10.pdf` / `Book1.xlsx`:真实世界文档(学术论文、业务透视工作簿)
 
-并排打开 `rich.docx` 与 `rich.expected.md`,即可看到 SmartArt 流程、`{E}^{2}=mc` 公式与艺术字"年度规划"如何被解析为 Markdown;回归测试保证对照集与解析器行为一致:
+并排打开 `rich.docx` 与 `rich.expected.md`,即可看到 SmartArt 流程、`{E}^{2}=mc` 公式与艺术字"年度规划"如何被解析为 Markdown;回归测试保证对照集与解析器行为一致。
+
+**亲自跑一遍**(无需任何外部服务):
+
+```bash
+git clone https://github.com/unitedrhino/docling
+cd docling
+go test ./... -run TestExamplesGolden -v   # 全部样例逐字回归,含上方复杂对象样例
+```
+
+或在你的代码里直接解析复杂样例:
+
+```go
+// go get github.com/unitedrhino/docling
+data, _ := os.ReadFile("examples/docx/rich.docx")
+md, err := docling.ParseByExtToMarkdown("rich.docx", data)
+fmt.Println(md) // 公式 LaTeX、SmartArt 流程 SVG、艺术字与 OLE 分类一目了然
+```
 
 ```bash
 go test ./... -run TestExamplesGolden            # 严格逐字回归
@@ -203,7 +220,6 @@ docling/
 欢迎通过任意方式参与共建:
 
 - 提 Issue / PR:本仓库
-- 官网:[https://www.unitedrhino.com/](https://www.unitedrhino.com/) ｜ 文档站:[https://doc.unitedrhino.com/](https://doc.unitedrhino.com/)
 - 扫码关注公众号,获取版本更新与文档解析实践分享,一起共建:
 
 <p align="center">

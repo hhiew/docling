@@ -171,6 +171,23 @@ Open `rich.docx` and `rich.expected.md` side by side to see how a SmartArt flow,
 `{E}^{2}=mc` formula and WordArt are parsed into Markdown; regression tests keep the corpus in
 sync with the parser.
 
+**Run it yourself** (no external services needed):
+
+```bash
+git clone https://github.com/unitedrhino/docling
+cd docling
+go test ./... -run TestExamplesGolden -v   # verbatim regression over every sample, rich ones included
+```
+
+Or parse the complex samples directly in your own code:
+
+```go
+// go get github.com/unitedrhino/docling
+data, _ := os.ReadFile("examples/docx/rich.docx")
+md, err := docling.ParseByExtToMarkdown("rich.docx", data)
+fmt.Println(md) // formula LaTeX, SmartArt flow SVG, WordArt & OLE classification at a glance
+```
+
 ```bash
 go test ./... -run TestExamplesGolden            # strict verbatim regression
 go test ./... -run TestExamplesGolden -update    # rebuild the corpus after parser changes
@@ -218,7 +235,6 @@ docling/
 Join us through any of these channels:
 
 - Issues / PRs: this repository
-- Website: [https://www.unitedrhino.com/](https://www.unitedrhino.com/) ｜ Docs: [https://doc.unitedrhino.com/](https://doc.unitedrhino.com/)
 - Scan the QR code to follow our WeChat official account for release notes and document-parsing deep dives — let's build together:
 
 <p align="center">
