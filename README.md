@@ -153,82 +153,17 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 
 ## examples:成果示例(原文 ↔ 识别后的 Markdown)
 
-[`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照,全部由代码构造、可再生产。以下展示复杂对象的实际成果:
+[`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照。以下全部展示**真实世界文档**的实际识别结果:
 
-### Word · rich.docx
+### Word · 微软官方测试文档(6 个原生图表)
 
-原文(含 OMML 公式、SmartArt 流程、艺术字与 OLE 嵌入对象):
-
-<p align="center">
-  <img src="assets/examples/rich-docx.png" alt="rich.docx 原文" width="420"/>
-</p>
-
-识别后的 Markdown(节选):
-
-````markdown
-# 产品评审报告
-
-本报告汇总评审结论、关键公式与流程图,供后续验收引用。
-
-能量换算关系:{E}^{2}=mc
-
-![提交申请
-技术评审
-发布上线](data:image/svg+xml;base64,...)   ← SmartArt 流程图转语义 SVG,节点文字进入可检索 caption
-
-![年度规划](data:image/svg+xml;base64,...)  ← 艺术字
-
-![Excel.Sheet.12](data:image/svg+xml;base64,...)  ← OLE 嵌入对象(不执行,仅记录)
-````
-
-### PPT · rich.pptx
-
-原文(标题、层级列表、跨列合并表格与原生图表):
+真实 Office 生成的多系列柱状图/折线图文档(微软 Open XML SDK 官方测试资产,MIT 授权):
 
 <p align="center">
-  <img src="assets/examples/rich-pptx.png" alt="rich.pptx 原文" width="420"/>
+  <img src="assets/examples/real-word-chart.png" alt="Word 原生图表文档" width="440"/>
 </p>
 
-识别后的 Markdown(节选):标题、列表、表格逐项还原;原生图表转为"SVG 语义预览 + 可检索数据表格"双重输出:
-
-````markdown
-# 演示文稿标题
-
-- 要点一
-  - 子要点
-- 要点二
-
-| 表头A |  |
-| --- | --- |
-| 跨列内容 | 跨列内容 |
-
-![](data:image/svg+xml;base64,...)   ← 图表 SVG 预览
-
-| 类别 | 销量 |
-| --- | --- |
-| 1月 | 120 |
-| 2月 | 186 |
-````
-
-### Excel · rich-chart.xlsx
-
-原生折线图工作簿:数据表与图表分别还原为可检索表格与 SVG 预览,图表引用的单元格数据完整保留。
-
-<p align="center">
-  <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx 原文" width="420"/>
-</p>
-
-### Office · 微软官方测试文档(含复杂对象)
-
-样例取自微软 Open XML SDK 官方测试资产(MIT 授权)——真实 Office 2007+ 生成的文档:
-
-<p align="center">
-  <img src="assets/examples/real-word-chart.png" alt="Word 原生图表" width="300"/>
-  <img src="assets/examples/real-ppt-3dpie.png" alt="PPT 3D 饼图" width="300"/>
-  <img src="assets/examples/real-xlsx-ole.png" alt="Excel OLE 对象" width="300"/>
-</p>
-
-识别后的 Markdown(节选):**Word 多系列柱状图**与 **PPT 3D 饼图**的图表数据完整还原为可检索表格 + SVG 预览,Excel 工作簿中的 OLE 嵌入对象按语义分类记录(不执行):
+识别后的 Markdown(节选):图表数据按系列精确还原为可检索表格,缺失单元格如实留空,并附 SVG 语义预览:
 
 ````markdown
 | 类别 | Series 1 | Series 2 | Series 3 |
@@ -238,6 +173,90 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 | Category 3 | 3.5 | 1.8 | 3 |
 | Category 4 | 4.5 | 2.8 | 5 |
 ````
+
+### PPT · 微软官方演示(3D 饼图)
+
+<p align="center">
+  <img src="assets/examples/real-ppt-3dpie.png" alt="PPT 3D 饼图" width="440"/>
+</p>
+
+识别后的 Markdown(节选):3D 饼图的季度数据完整还原:
+
+````markdown
+| 类别 | Sales |
+| --- | --- |
+| 1st Qtr | 8.2 |
+| 2nd Qtr | 3.2 |
+| 3rd Qtr | 1.4 |
+| 4th Qtr | 1.2 |
+````
+
+### Excel · 微软官方工作簿(OLE 嵌入对象)
+
+<p align="center">
+  <img src="assets/examples/real-xlsx-ole.png" alt="Excel OLE 嵌入对象" width="440"/>
+</p>
+
+工作簿中的 OLE 嵌入对象按语义分类记录(目标路径、程序标识入 meta,**载荷不执行**)。
+
+### PDF · 真实学术论文(196 页 + 双栏会议论文)
+
+<p align="center">
+  <img src="assets/examples/thesis.png" alt="196 页硕士论文" width="380"/>
+  <img src="assets/examples/gohotdraw.png" alt="10 页双栏会议论文" width="380"/>
+</p>
+
+识别后的 Markdown(节选;两份论文 200+ 页纯 Go 解析约 30 秒):
+
+````markdown
+## Evaluating the GO
+
+## Programming Language with
+
+## Design Patterns
+
+by
+
+### Frank Schmager
+
+A thesis
+submitted to the Victoria University of Wellington
+in partial fulfilment of the requirements for the degree of
+Master of Science in Computer Science.
+
+### Abstract
+
+GO is a new object-oriented programming language developed at Google
+by Rob Pike, Ken Thompson, and others. ...
+````
+
+右侧的 10 页双栏会议论文([gohotdraw-paper.pdf](examples/pdf/gohotdraw-paper.pdf))展示**双栏阅读顺序还原**。
+
+### TXT / CSV / EML · 真实文本类文档
+
+《汤姆·索亚历险记》全书(380KB)、x86 指令集表(3700+ 行)、CPython 标准库的真实 MIME 退信邮件:
+
+````markdown
+# Banned file: auto__mail.python.bat in mail from you
+
+From: MAILER DAEMON <>
+
+To: <webmaster@python.org>
+
+Date: Fri, 26 Nov 2004 19:41:44 -0800 (PST)
+
+BANNED FILENAME ALERT
+
+Your message to: xxxxxxx@dot.ca.gov, ...
+was blocked by our Spam Firewall. The email you sent with the following
+subject has NOT BEEN DELIVERED:
+````
+
+邮件头、multipart 正文择优、收件人列表逐项还原;CSV 表与长文本按原样结构化。
+
+### 构造样例(rich-\*)
+
+对 SmartArt、OMML 公式、艺术字、组合图等**复杂对象**提供确定性对照(代码构造、可再生产):公式转 LaTeX(`{E}^{2}=mc`)、SmartArt 流程转语义 SVG 且节点文字进入可检索 caption、组合图按系列类型分列渲染——见 [examples/](examples/) 与 [`examples/README.md`](examples/README.md)。
 
 ### 各格式真实样例总览
 
@@ -253,43 +272,6 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 | Markdown | goldmark 项目 README | yuin/goldmark(MIT) |
 | AsciiDoc | lzip-go 项目 CHANGELOG | sorairolake/lzip-go(CC-BY-4.0) |
 | HTML | Go net/http 包文档页(godoc) | Go 官方文档快照 |
-
-### PDF · 真实学术论文
-
-196 页硕士论文《Evaluating the GO Programming Language with Design Patterns》(Victoria University of Wellington, 2010):
-
-<p align="center">
-  <img src="assets/examples/thesis.png" alt="论文原文首页" width="380"/>
-  <img src="assets/examples/gohotdraw.png" alt="GoHotDraw 双栏论文" width="380"/>
-</p>
-
-识别后的 Markdown(节选,完整对照见 [examples/pdf/design-patterns-thesis.expected.md](examples/pdf/design-patterns-thesis.expected.md)):
-
-````markdown
-## Evaluating the GO
-
-## Programming Language with
-
-## Design Patterns
-
-by
-
-### Frank Schmager
-
-A thesis
-submitted to the Victoria University ofWellington
-in partial fulfilment of the
-requirements for the degree of
-Master of Science
-in Computer Science.
-
-### Abstract
-
-GO is a newobject-oriented programming language developed at Google
-by Rob Pike, Ken Thompson, and others. ...
-````
-
-另一份是同一作者的 10 页**双栏会议论文**[gohotdraw-paper.pdf](examples/pdf/gohotdraw-paper.pdf)(GoHotDraw 图形框架),用于展示双栏阅读顺序的还原效果。两份论文共 200+ 页,纯 Go 解析约 30 秒完成,golden 回归即真实压测。
 
 ### 亲自跑一遍(无需任何外部服务)
 

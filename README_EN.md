@@ -158,78 +158,20 @@ failures keep the pure-Go result — **model enhancement never breaks existing o
 
 ## examples: results showcase (source ↔ recognized Markdown)
 
-[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format,
-all built from code and reproducible. Below are the actual results on complex objects:
+[`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format.
+Everything below shows recognition results on **real-world documents**:
 
-### Word · rich.docx
+### Word · Microsoft official test document (6 native charts)
 
-Source (OMML formula, SmartArt process, WordArt and an OLE embedded object):
-
-<p align="center">
-  <img src="assets/examples/rich-docx.png" alt="rich.docx source" width="420"/>
-</p>
-
-Recognized Markdown (excerpt):
-
-````markdown
-能量换算关系:{E}^{2}=mc
-
-![提交申请
-技术评审
-发布上线](data:image/svg+xml;base64,...)   ← SmartArt flow → semantic SVG, node text becomes searchable captions
-
-![年度规划](data:image/svg+xml;base64,...)  ← WordArt
-
-![Excel.Sheet.12](data:image/svg+xml;base64,...)  ← OLE embedded object (recorded, never executed)
-````
-
-### PPT · rich.pptx
-
-Source (title, nested lists, column-span table and a native chart):
+A multi-series column/line chart document produced by real Office (Microsoft Open XML SDK
+official test assets, MIT licensed):
 
 <p align="center">
-  <img src="assets/examples/rich-pptx.png" alt="rich.pptx source" width="420"/>
+  <img src="assets/examples/real-word-chart.png" alt="Word native charts" width="440"/>
 </p>
 
-Recognized Markdown (excerpt): title, lists and table restored item by item; the native chart
-becomes both an SVG semantic preview and a searchable data table:
-
-````markdown
-| 表头A |  |
-| --- | --- |
-| 跨列内容 | 跨列内容 |
-
-![](data:image/svg+xml;base64,...)   ← chart SVG preview
-
-| 类别 | 销量 |
-| --- | --- |
-| 1月 | 120 |
-| 2月 | 186 |
-````
-
-### Excel · rich-chart.xlsx
-
-A workbook with a native line chart: the data sheet and the chart are restored as a searchable
-table and an SVG preview respectively, with the chart's cell references fully preserved.
-
-<p align="center">
-  <img src="assets/examples/rich-chart.png" alt="rich-chart.xlsx source" width="420"/>
-</p>
-
-### Office · Microsoft official test documents (complex objects)
-
-Samples taken from Microsoft's Open XML SDK official test assets (MIT licensed) — documents
-produced by real Office 2007+ applications:
-
-<p align="center">
-  <img src="assets/examples/real-word-chart.png" alt="Word native charts" width="300"/>
-  <img src="assets/examples/real-ppt-3dpie.png" alt="PPT 3D pie" width="300"/>
-  <img src="assets/examples/real-xlsx-ole.png" alt="Excel OLE objects" width="300"/>
-</p>
-
-Recognized Markdown (excerpt): chart data from the **Word multi-series column charts** and the
-**PPT 3D pie** is fully restored as searchable tables plus SVG previews; OLE embedded objects in
-the Excel workbook are recorded by semantic classification (never executed):
+Recognized Markdown (excerpt): chart data restored per series as a searchable table, missing
+cells left honestly empty, plus an SVG semantic preview:
 
 ````markdown
 | 类别 | Series 1 | Series 2 | Series 3 |
@@ -239,6 +181,97 @@ the Excel workbook are recorded by semantic classification (never executed):
 | Category 3 | 3.5 | 1.8 | 3 |
 | Category 4 | 4.5 | 2.8 | 5 |
 ````
+
+### PPT · Microsoft official deck (3D pie)
+
+<p align="center">
+  <img src="assets/examples/real-ppt-3dpie.png" alt="PPT 3D pie" width="440"/>
+</p>
+
+Recognized Markdown (excerpt): quarterly data of the 3D pie fully restored:
+
+````markdown
+| 类别 | Sales |
+| --- | --- |
+| 1st Qtr | 8.2 |
+| 2nd Qtr | 3.2 |
+| 3rd Qtr | 1.4 |
+| 4th Qtr | 1.2 |
+````
+
+### Excel · Microsoft official workbook (OLE embedded objects)
+
+<p align="center">
+  <img src="assets/examples/real-xlsx-ole.png" alt="Excel OLE objects" width="440"/>
+</p>
+
+OLE embedded objects are recorded by semantic classification (target path and program id go
+into meta; **payloads are never executed**).
+
+### PDF · real academic papers (196-page thesis + two-column paper)
+
+<p align="center">
+  <img src="assets/examples/thesis.png" alt="196-page thesis" width="380"/>
+  <img src="assets/examples/gohotdraw.png" alt="10-page two-column paper" width="380"/>
+</p>
+
+Recognized Markdown (excerpt; both papers, 200+ pages, parse in ~30s in pure Go):
+
+````markdown
+## Evaluating the GO
+
+## Programming Language with
+
+## Design Patterns
+
+by
+
+### Frank Schmager
+
+A thesis
+submitted to the Victoria University of Wellington
+...
+
+### Abstract
+
+GO is a new object-oriented programming language developed at Google
+by Rob Pike, Ken Thompson, and others. ...
+````
+
+The 10-page two-column conference paper on the right
+([gohotdraw-paper.pdf](examples/pdf/gohotdraw-paper.pdf)) demonstrates **multi-column
+reading-order recovery**.
+
+### TXT / CSV / EML · real text documents
+
+The Adventures of Tom Sawyer (full book, 380KB), the x86 instruction-set table (3,700+ rows)
+and a real MIME bounce mail from the CPython stdlib:
+
+````markdown
+# Banned file: auto__mail.python.bat in mail from you
+
+From: MAILER DAEMON <>
+
+To: <webmaster@python.org>
+
+Date: Fri, 26 Nov 2004 19:41:44 -0800 (PST)
+
+BANNED FILENAME ALERT
+
+Your message to: xxxxxxx@dot.ca.gov, ...
+was blocked by our Spam Firewall. The email you sent with the following
+subject has NOT BEEN DELIVERED:
+````
+
+Headers, best-body selection from multipart and recipient lists are restored item by item;
+CSV tables and long text keep their structure.
+
+### Constructed samples (rich-*)
+
+For SmartArt, OMML formulas, WordArt and combo charts we provide deterministic pairs (built
+from code, reproducible): formulas become LaTeX (`{E}^{2}=mc`), SmartArt flows become semantic
+SVGs with node text in searchable captions, combo charts render per series type — see
+[examples/](examples/) and [`examples/README.md`](examples/README.md).
 
 ### Real-world samples per format
 
@@ -254,45 +287,6 @@ the Excel workbook are recorded by semantic classification (never executed):
 | Markdown | goldmark project README | yuin/goldmark (MIT) |
 | AsciiDoc | lzip-go project CHANGELOG | sorairolake/lzip-go (CC-BY-4.0) |
 | HTML | Go net/http package doc page (godoc) | Go official docs snapshot |
-
-### PDF · real academic papers
-
-A 196-page master's thesis, "Evaluating the GO Programming Language with Design Patterns"
-(Victoria University of Wellington, 2010):
-
-<p align="center">
-  <img src="assets/examples/thesis.png" alt="thesis first page" width="380"/>
-  <img src="assets/examples/gohotdraw.png" alt="GoHotDraw two-column paper" width="380"/>
-</p>
-
-Recognized Markdown (excerpt; full corpus at
-[examples/pdf/design-patterns-thesis.expected.md](examples/pdf/design-patterns-thesis.expected.md)):
-
-````markdown
-## Evaluating the GO
-
-## Programming Language with
-
-## Design Patterns
-
-by
-
-### Frank Schmager
-
-A thesis
-submitted to the Victoria University ofWellington
-...
-
-### Abstract
-
-GO is a newobject-oriented programming language developed at Google
-by Rob Pike, Ken Thompson, and others. ...
-````
-
-The second one is a 10-page **two-column conference paper** by the same author
-([gohotdraw-paper.pdf](examples/pdf/gohotdraw-paper.pdf), the GoHotDraw drawing framework),
-demonstrating multi-column reading-order recovery. The two papers total 200+ pages and parse
-in ~30s in pure Go — the golden regression doubles as a real-world stress test.
 
 ### Run it yourself (no external services needed)
 
