@@ -35,13 +35,34 @@ The mainstream approach to modern document parsing is a Python model pipeline (e
 - 🔒 **Never fabricates**: content the parser is unsure about keeps its raw signal and falls back to vision, instead of guessing a structure
 - 🤝 **Ecosystem compatible**: output is fully aligned with the official Docling protocol, so existing Docling downstream tooling plugs right in
 
+## Architecture innovation: one model interface replaces a five-component pipeline
+
+The complexity of traditional document-parsing pipelines comes from stacking specialized
+components — one engine or model each for recognition, layout, tables, formulas and reading
+order:
+
+| Capability | Traditional pipeline | docling (Go) |
+|------------|----------------------|--------------|
+| Text recognition (OCR) | OCR engines like tesseract | Rules: font/CMap recovery; recognition → **LLM hook** |
+| Page layout | layout models (e.g. LayoutLMv3) | Rules: recursive XY-cut columns; ambiguous pages → **LLM hook** |
+| Table structure | table models (e.g. TableFormer) | Rules: coordinate grid recovery (borderless & cross-page); image tables → **LLM hook** |
+| Formula recognition | formula models | Rules: OMML→LaTeX; image formulas → **LLM hook** |
+| Reading order | order models | Rules: column splitting + anchor sorting |
+
+**Deterministic structure goes to the rule engine** (no models needed — exact and fast);
+**recognition tasks converge into a single multimodal-LLM interface** (`OCRHook`/`PDFVisualHook`):
+dependencies drop from "an OCR engine plus 4 model files" to "zero built-in models plus one
+optional model interface", so deployment and upgrades simplify accordingly — swap in a stronger
+LLM and the whole recognition chain upgrades together.
+
 ## Architecture
 
 <p align="center">
   <img src="assets/architecture.svg" alt="docling architecture" width="100%"/>
 </p>
 
-> The parser computes per-page quality signals (garbage ratio, table candidates, formula density,
+> The LLM side path on the right of the diagram is the single entry point for every "recognition"
+> capability in the table above. The parser computes per-page quality signals (garbage ratio, table candidates, formula density,
 > column ambiguity) and routes only the hard pages to your LLM. Model results are strictly
 > validated and merged with rule text by geometry; failures keep the pure-Go output —
 > **the model is spent only where it matters and never breaks existing results**.
