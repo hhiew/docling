@@ -344,6 +344,30 @@ fmt.Println(md) // formula LaTeX, SmartArt flow SVG, WordArt & OLE classificatio
 ```
 
 
+## Comparison with anydoc (Firecrawl's Rust converter)
+
+[anydoc](https://github.com/firecrawl/anydoc) (Rust, MIT, 17k stars) and docling both serve the
+"documents → LLM-ready data" layer, with different trade-offs — anydoc pushes the **conversion
+layer to be minimal and blazing fast** (14 formats → GFM Markdown, 4.4ms median, no models, no
+external services, scanned PDFs rejected with Unsupported); docling takes the **structural depth
++ RAG completeness** route:
+
+| Dimension | anydoc (Rust) | docling (Go) |
+|-----------|----------------|----------------|
+| Positioning | Pure conversion: no OCR, no chunking, no chart semantics | Conversion + structure + RAG chunking, one stop to retrieval |
+| Formats | 14 (strong on legacy binary .doc/.ppt/.xls, ODF, RTF, EPUB) | 12 (strong on HTML, Markdown, AsciiDoc, EML email, images, Docling JSON read-back) |
+| Output | GFM Markdown only | Markdown / HTML / Docling JSON (lossless) / content_list + three chunkers |
+| PDF depth | Text PDFs extracted directly; scans rejected with Unsupported (OCR via Firecrawl's hosted API) | Deep text-PDF parsing (cross-page tables / multi-column / font recovery / JPEG2000-JBIG2-soft masks); scanned pages route to **self-hosted** LLM hooks |
+| Charts | No chart semantics | OOXML chart data backfilled as searchable tables + SVG previews |
+| Speed | 4.4ms median (Office docs, shallow) | 0.31s paper / 0.73s book (deep-parsing workload; 34–153× faster than Python Docling) |
+| Failure philosophy | Convert correctly or fail loudly | Never fabricate (missing cells left empty, uncertainty keeps raw signal) |
+
+> A note on speed: 4.4ms vs 0.31s is not apples-to-apples — the former is shallow Office-doc
+conversion, the latter deep PDF parsing (table structure / reading order / font recovery). The
+philosophies are close (loud failure beats silent pollution); pick "fastest clean Markdown" or
+"structural depth + RAG readiness" accordingly. Legacy binary Office, ODF, RTF and EPUB are on
+docling's roadmap.
+
 ## Gaps vs Python Docling (stated honestly)
 
 This repository is a Go implementation of the Docling protocol — **complementary to, not a

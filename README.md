@@ -320,6 +320,22 @@ fmt.Println(md) // 公式 LaTeX、SmartArt 流程 SVG、艺术字与 OLE 分类�
 ```
 
 
+## 与 anydoc 的对比(Firecrawl 的 Rust 转换库)
+
+[anydoc](https://github.com/firecrawl/anydoc)(Rust,MIT,1.7 万 Star)与 docling 同属"文档 → LLM 就绪数据"这一层,但取舍不同——anydoc 把**转换层做到极简极快**(14 种格式 → GFM Markdown,中位 4.4ms,无模型无外部服务,扫描 PDF 直接报错 Unsupported);docling 走**结构化深度 + RAG 完整度**路线:
+
+| 维度 | anydoc(Rust) | docling(Go) |
+|------|----------------|----------------|
+| 定位 | 纯转换层:不做 OCR/chunking/图表语义 | 转换 + 结构化 + RAG 分块,一站到检索 |
+| 格式 | 14 种(强在旧二进制 .doc/.ppt/.xls、ODF、RTF、EPUB) | 12 种(强在 HTML、Markdown、AsciiDoc、EML 邮件、图片、Docling JSON 回读) |
+| 输出 | 仅 GFM Markdown | Markdown / HTML / Docling JSON(无损)/ content_list + 三种分块器 |
+| PDF 深度 | 文本型直接提取;扫描件返回 Unsupported(OCR 走 Firecrawl 托管 API) | 文本型深度解析(跨页表格/多栏/字体乱码恢复/JPEG2000-JBIG2-软蒙版);扫描页可挂**自部署**大模型钩子 |
+| 图表 | 不解析图表语义 | OOXML 图表数据回填为可检索表格 + SVG 预览 |
+| 速度 | 中位 4.4ms(Office 文档,浅转换) | 论文 0.31s / 书稿 0.73s(深度解析口径,比 Python Docling 快 34~153 倍) |
+| 失败哲学 | 正确转换或大声失败(明确报错) | 不伪造结果(缺失单元格留空、不确定保留原始信号) |
+
+> 速度口径提示:4.4ms 与 0.31s 不可直接对轰——前者是 Office 文档浅转换,后者是 PDF 深度解析(表格结构/阅读顺序/字体恢复)。两者哲学相近(明确失败优于静默污染),选型看你要"最快拿到干净 Markdown"还是"结构化深度 + RAG 就绪"。旧版二进制 Office(.doc/.ppt/.xls)、ODF、RTF、EPUB 在 docling 路线图中。
+
 ## 与 Python Docling 的差距(如实说明)
 
 本仓库是 Docling 协议的 Go 实现,与 Python 官方版是**互补关系而非等价替代**。协议层与 Docling Core `1.10.0` 完全对齐、可无损往返官方 JSON,分块语义对齐官方 HierarchicalChunker/HybridChunker;但解析质量层面存在明确差距:
