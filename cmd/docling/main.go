@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/unitedrhino/docling"
+	"github.com/unitedrhino/docling/cli"
 	"github.com/unitedrhino/docling/llmocr"
 )
 
@@ -135,18 +136,18 @@ func parseAndWrite(source string, opts *parseFlags, stdout, stderr io.Writer) er
 	var output []byte
 	switch opts.format {
 	case "outline":
-		output = []byte(buildOutline(doc))
+		output = []byte(cli.Outline(doc))
 	case "md":
 		if opts.section == "" && opts.sheet == "" {
-			output = []byte(doc.ToMarkdownWithOptions(docling.ExportOptions{Layers: parseLayers(opts.layers)}))
+			output = []byte(doc.ToMarkdownWithOptions(docling.ExportOptions{Layers: cli.ParseLayers(opts.layers)}))
 		} else {
-			items := filterItems(toItems(doc), opts.section, opts.sheet)
-			output = []byte(renderItemsMarkdown(items))
+			items := cli.FilterItems(docling.ToContentList(doc, docling.SourceGolight), opts.section, opts.sheet)
+			output = []byte(cli.RenderItemsMarkdown(items))
 		}
 	case "content-list":
-		items := toItems(doc)
+		items := docling.ToContentList(doc, docling.SourceGolight)
 		if opts.section != "" || opts.sheet != "" {
-			items = filterItems(items, opts.section, opts.sheet)
+			items = cli.FilterItems(items, opts.section, opts.sheet)
 		}
 		output, err = marshalIndent(items)
 		if err != nil {
@@ -186,61 +187,6 @@ func readSource(source, name string) (string, []byte, error) {
 	}
 	data, err := os.ReadFile(source)
 	return source, data, err
-}
-
-// toItems 把文档转为 content_list(Golight 来源标记仅供溯源)。
-func toItems(doc *docling.DoclingDocument) []docling.Item {
-	return docling.ToContentList(doc, docling.SourceGolight)
-}
-
-// parseLayers 解析逗号分隔的内容层;未知值忽略。
-func parseLayers(s string) []docling.ContentLayer {
-	valid := map[string]docling.ContentLayer{
-		"body":       docling.LayerBody,
-		"furniture":  docling.LayerFurniture,
-		"background": docling.LayerBackground,
-		"invisible":  docling.LayerInvisible,
-		"notes":      docling.LayerNotes,
-	}
-	var layers []docling.ContentLayer
-	for _, part := range strings.Split(s, ",") {
-		if layer, ok := valid[strings.TrimSpace(strings.ToLower(part))]; ok {
-			layers = append(layers, layer)
-		}
-	}
-	if len(layers) == 0 {
-		layers = []docling.ContentLayer{docling.LayerBody}
-	}
-	return layers
-}
-
-// filterItems 按章节路径前缀与首级分组名过滤 content_list。
-func filterItems(items []docling.Item, section, sheet string) []docling.Item {
-	section = strings.TrimSpace(section)
-	sheet = strings.TrimSpace(sheet)
-	out := make([]docling.Item, 0, len(items))
-	for _, item := range items {
-		if sheet != "" {
-			if len(item.SectionPath) == 0 || !strings.Contains(item.SectionPath[0], sheet) {
-				continue
-			}
-		}
-		if section != "" && !matchSection(item.SectionPath, section) {
-			continue
-		}
-		out = append(out, item)
-	}
-	return out
-}
-
-// matchSection 判断章节路径任一层级是否以 section 前缀命中(标题自身也算)。
-func matchSection(path []string, section string) bool {
-	for _, part := range path {
-		if strings.Contains(part, section) {
-			return true
-		}
-	}
-	return false
 }
 
 // marshalIndent 带尾行换行的缩进 JSON 输出。

@@ -1,7 +1,8 @@
-// outline.go 实现 parse 的渐进式披露输出：buildOutline 从 content_list 推导
-// 一张小型结构地图（标题树/表格/图片/工作表分组），renderItemsMarkdown 把
-// 过滤后的条目渲染为简化 Markdown。两者都只依赖公开的 Item 字段。
-package main
+// Package cli 导出 docling CLI 的通用输出辅助：Outline 生成渐进式披露的
+// 结构地图（标题树/表格/图片/分组），RenderItemsMarkdown 把过滤后的条目
+// 渲染为简化 Markdown，FilterItems 按章节/分组过滤，ParseLayers 解析内容层。
+// 供 cmd/docling 与 ur CLI(ur doc parse) 复用，均只依赖公开 Item 字段。
+package cli
 
 import (
 	"fmt"
@@ -12,8 +13,8 @@ import (
 
 // buildOutline 生成文档结构地图：首行概览 + 标题树 + 表格清单 + 图片清单
 // + 多分组（工作表/幻灯片）列表。输出控制在几十行内，供 AI 决定下一步。
-func buildOutline(doc *docling.DoclingDocument) string {
-	items := toItems(doc)
+func Outline(doc *docling.DoclingDocument) string {
+	items := ToItems(doc)
 	var b strings.Builder
 	fmt.Fprintf(&b, "文档: %s | %d 页 | %d 文本块 | %d 表格 | %d 图片\n",
 		doc.Name, len(doc.Pages), countType(items, docling.ItemTypeText), countType(items, docling.ItemTypeTable), countType(items, docling.ItemTypeImage))
@@ -67,7 +68,7 @@ func buildOutline(doc *docling.DoclingDocument) string {
 
 // renderItemsMarkdown 把过滤后的 content_list 渲染为简化 Markdown：标题按
 // 层级映射 #、表格用现成 GFM TableBody、公式用 LaTeX、代码加围栏。
-func renderItemsMarkdown(items []docling.Item) string {
+func RenderItemsMarkdown(items []docling.Item) string {
 	var b strings.Builder
 	for _, item := range items {
 		switch {
@@ -200,4 +201,60 @@ func oneLine(s string) string {
 		return string(runes[:80]) + "…"
 	}
 	return s
+}
+
+// ToItems 把文档转为 content_list(Golight 来源标记仅供溯源)。
+func ToItems(doc *docling.DoclingDocument) []docling.Item {
+	return docling.ToContentList(doc, docling.SourceGolight)
+}
+
+// matchSection 判断章节路径任一层级是否包含 section 前缀(标题自身也算)。
+func matchSection(path []string, section string) bool {
+	for _, part := range path {
+		if strings.Contains(part, section) {
+			return true
+		}
+	}
+	return false
+}
+
+// FilterItems 按章节路径前缀与首级分组名过滤 content_list;两个条件均为
+// 子串匹配(便于"第四章"命中"第四章 系统设计"),空条件跳过。
+func FilterItems(items []docling.Item, section, sheet string) []docling.Item {
+	section = strings.TrimSpace(section)
+	sheet = strings.TrimSpace(sheet)
+	out := make([]docling.Item, 0, len(items))
+	for _, item := range items {
+		if sheet != "" {
+			if len(item.SectionPath) == 0 || !strings.Contains(item.SectionPath[0], sheet) {
+				continue
+			}
+		}
+		if section != "" && !matchSection(item.SectionPath, section) {
+			continue
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+// ParseLayers 解析逗号分隔的内容层;未知值忽略,空/全未知回退 body。
+func ParseLayers(s string) []docling.ContentLayer {
+	valid := map[string]docling.ContentLayer{
+		"body":       docling.LayerBody,
+		"furniture":  docling.LayerFurniture,
+		"background": docling.LayerBackground,
+		"invisible":  docling.LayerInvisible,
+		"notes":      docling.LayerNotes,
+	}
+	var layers []docling.ContentLayer
+	for _, part := range strings.Split(s, ",") {
+		if layer, ok := valid[strings.TrimSpace(strings.ToLower(part))]; ok {
+			layers = append(layers, layer)
+		}
+	}
+	if len(layers) == 0 {
+		layers = []docling.ContentLayer{docling.LayerBody}
+	}
+	return layers
 }
