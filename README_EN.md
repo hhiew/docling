@@ -194,6 +194,35 @@ Hook results are strictly validated (labels, confidence, bboxes, table topology,
 anti-repetition) with one automatic retry; valid objects are merged with rule text by geometry and
 failures keep the pure-Go result — **model enhancement never breaks existing output**.
 
+## Command Line Tool (CLI)
+
+Prefer a terminal? The `docling` command ships in the same pure-Go single binary:
+
+```bash
+go install github.com/unitedrhino/docling/cmd/docling@latest
+
+# Progressive disclosure: a tiny structure map first (headings/tables/images)
+docling parse report.pdf --format outline
+# Full read, or drill into one chapter
+docling parse report.pdf --format md
+docling parse report.pdf --format md --section 第四章
+# Lossless JSON to disk; query it with jq
+docling parse report.xlsx --format json --out doc.json
+# Excel formula provenance: list every formula cell (value, formula)
+jq -r '.texts[] | select(.meta.docling__xlsx_formula) | [.text, .meta.docling__xlsx_formula] | @tsv' doc.json
+# Reverse lookup: which table cell references formula node #/texts/3
+jq '.tables[].data.table_cells[] | select(.ref."$ref" == "#/texts/3")' doc.json
+```
+
+### Optional LLM-powered OCR
+
+```bash
+OPENAI_API_KEY=sk-xxx docling parse scan.pdf --format md --ocr
+# More: OPENAI_BASE_URL (custom gateway), DOCLING_OCR_MODEL (default gpt-4o), --ocr-max-pages (page budget)
+```
+
+`--ocr` mounts both hooks (verbatim OCR + structured vision): scanned pages, garbled pages, image tables and formula-dense pages route to the model automatically; failures fall back to pure-Go results, and a page budget keeps costs sane. Any OpenAI-compatible multimodal model (vLLM, GLM, Qwen-VL, ...) works.
+
 ## examples: results showcase (source ↔ recognized Markdown)
 
 [`examples/`](examples/) ships a "source file ↔ expected Markdown" pair per supported format.

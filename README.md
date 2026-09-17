@@ -180,6 +180,35 @@ doc, err := docling.ParsePDFWithOptions(data, docling.PDFOptions{
 
 组件对钩子返回值做强校验(标签、置信度、bbox、表格拓扑、防拒答/防复读),无效结果自动重试一次;有效结果与规则文本按几何去重合并,失败则保留纯 Go 结果——**模型增强永远不破坏既有输出**。
 
+## 命令行工具(CLI)
+
+不想写代码?开箱即用的 `docling` 命令(同为纯 Go 单二进制):
+
+```bash
+go install github.com/unitedrhino/docling/cmd/docling@latest
+
+# 渐进式:先看结构地图(章节树/表格/图片,几百字节)
+docling parse report.pdf --format outline
+# 通读全文,或按章节精取
+docling parse report.pdf --format md
+docling parse report.pdf --format md --section 第四章
+# 无损 JSON 落盘,查询交给 jq
+docling parse report.xlsx --format json --out doc.json
+# excel 公式溯源:列出所有公式单元格(值,公式)
+jq -r '.texts[] | select(.meta.docling__xlsx_formula) | [.text, .meta.docling__xlsx_formula] | @tsv' doc.json
+# 反查哪个表格单元格引用了公式节点 #/texts/3
+jq '.tables[].data.table_cells[] | select(.ref."$ref" == "#/texts/3")' doc.json
+```
+
+### 大模型 OCR(可选)
+
+```bash
+OPENAI_API_KEY=sk-xxx docling parse scan.pdf --format md --ocr
+# 更多:OPENAI_BASE_URL(自定义网关)、DOCLING_OCR_MODEL(模型名,默认 gpt-4o)、--ocr-max-pages(页数预算)
+```
+
+`--ocr` 同时挂载逐字 OCR 与结构化视觉两个钩子:扫描页/乱码页/图片表格/公式密集页自动送模型,识别失败自动回退纯 Go 结果,页数预算防失控。任意 OpenAI 兼容多模态模型(vLLM、GLM、Qwen-VL 等)均可使用。
+
 ## examples:成果示例(原文 ↔ 识别后的 Markdown)
 
 [`examples/`](examples/) 为每种受支持格式提供"样例源文件 ↔ Markdown 期望输出"的成对对照。以下全部展示**真实世界文档**的实际识别结果:
