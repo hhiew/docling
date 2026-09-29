@@ -137,6 +137,13 @@ func parseByExtData(name string, data []byte, options ParseOptions) (*DoclingDoc
 			MIMEType:    mimeType,
 			Filename:    filepath.Base(name),
 		})
+	case ".svg":
+		return ParseSVGWithOptions(data, PDFOptions{
+			OCRHook:     options.OCRHook,
+			PageOCRHook: options.PageOCRHook,
+			MIMEType:    mimeType,
+			Filename:    filepath.Base(name),
+		})
 	default:
 		return nil, fmt.Errorf("docling: 不支持的文件类型 %s", filepath.Ext(name))
 	}
@@ -196,6 +203,8 @@ func documentMIMEForExt(ext string) string {
 		return "image/bmp"
 	case ".webp":
 		return "image/webp"
+	case ".svg":
+		return "image/svg+xml"
 	default:
 		return "application/octet-stream"
 	}
