@@ -12,7 +12,9 @@
 //   - xlsx：excelize 遍历全部 sheet，每 sheet 独立 table 元素，大表分段；
 //   - csv：首行表头 + 行数分段；
 //   - eml：RFC 5322 头 + MIME 递归（text/html、text/plain、嵌套邮件）；
-//   - 图片（png/jpg/bmp/webp）：尺寸/DPI PictureItem + 可选 OCRHook 识别文本。
+//   - 图片（png/jpg/bmp/webp）：尺寸/DPI PictureItem + 可选 OCRHook 识别文本；
+//   - CAD（dwg/dxf/dxfb）：go-cad 纯 Go 解析，图框切分逐页渲染 PNG，
+//     图纸文本按图框归属（见 cad.go）。
 package docling
 
 import (
@@ -144,6 +146,12 @@ func parseByExtData(name string, data []byte, options ParseOptions) (*DoclingDoc
 			MIMEType:    mimeType,
 			Filename:    filepath.Base(name),
 		})
+	case ".dwg", ".dxf", ".dxfb":
+		// CAD 文本由矢量层直接提取（见 cad.go 文件头），无需 OCR 钩子
+		return ParseCADWithOptions(data, PDFOptions{
+			MIMEType: mimeType,
+			Filename: filepath.Base(name),
+		})
 	default:
 		return nil, fmt.Errorf("docling: 不支持的文件类型 %s", filepath.Ext(name))
 	}
@@ -205,6 +213,11 @@ func documentMIMEForExt(ext string) string {
 		return "image/webp"
 	case ".svg":
 		return "image/svg+xml"
+	case ".dwg":
+		return "image/vnd.dwg"
+	case ".dxf", ".dxfb":
+		// DXF ASCII 与二进制变体同 MIME（二进制只是编码差异，语义同源）
+		return "image/vnd.dxf"
 	default:
 		return "application/octet-stream"
 	}
