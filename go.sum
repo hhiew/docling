@@ -26,6 +26,8 @@ github.com/tiendc/go-deepcopy v1.7.2 h1:Ut2yYR7W9tWjTQitganoIue4UGxZwCcJy3orjrrI
 github.com/tiendc/go-deepcopy v1.7.2/go.mod h1:4bKjNC2r7boYOkD2IOuZpYjmlDdzjbpTRyCx+goBCJQ=
 github.com/unitedrhino/go-cad v0.0.0-20261001014858-b6415675ed48 h1:sOzHa0q8KmAsEpt0niLojvdOixuJWzuoMOFHETcJgHs=
 github.com/unitedrhino/go-cad v0.0.0-20261001014858-b6415675ed48/go.mod h1:/lJP5vXeqEveWggGtlZhwbs2L2D9RSLZiKjhyWaSSvQ=
+github.com/unitedrhino/go-cad v0.0.0-20261001090957-ddd91eea9618 h1:0nHkFHRgw+w6C1gNhJszzzBON906sY/n+xbItLeSF+g=
+github.com/unitedrhino/go-cad v0.0.0-20261001090957-ddd91eea9618/go.mod h1:/lJP5vXeqEveWggGtlZhwbs2L2D9RSLZiKjhyWaSSvQ=
 github.com/xuri/efp v0.0.1 h1:fws5Rv3myXyYni8uwj2qKjVaRP30PdjeYe2Y6FDsCL8=
 github.com/xuri/efp v0.0.1/go.mod h1:ybY/Jr0T0GTCnYjKqmdwxyxn2BQf2RcQIIvex5QldPI=
 github.com/xuri/excelize/v2 v2.11.0 h1:HxaEFl6sRN2+8J5a8HaKq+0M4FsjBGMnWWtjOCPSG88=
