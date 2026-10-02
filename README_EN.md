@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 > Feed any document to your LLM — a single pure-Go binary, 1–2 orders of magnitude faster, with optional LLM enhancement for the hard pages.
 
-`docling` converts PDF, Word, PPT, Excel/CSV, HTML, Markdown, AsciiDoc, EML email, images and plain text into a unified **DoclingDocument** structured model (aligned with the Docling Core `1.10.0` official protocol) — a drop-in document ingestion layer for RAG chunking, embedding pipelines and agent toolchains.
+`docling` converts PDF, Word, PPT, Excel/CSV, HTML, Markdown, AsciiDoc, EML email, images, plain text and CAD drawings (DWG/DXF) into a unified **DoclingDocument** structured model (aligned with the Docling Core `1.10.0` official protocol) — a drop-in document ingestion layer for RAG chunking, embedding pipelines and agent toolchains.
 
 > Naming note: this repository is a pure-Go implementation of the [Docling](https://github.com/docling-project/docling) protocol. The Go package is named `docling` and shares the same document model as the Python reference implementation.
 
@@ -17,7 +17,7 @@ Before feeding documents to an LLM/RAG pipeline, four questions must be answered
 
 | Pain point | docling (Go)'s answer |
 |------------|------------------------|
-| Heterogeneous formats: PDF, Office, web, email and images each need their own parsing stack, and stitching them together is expensive to maintain | One unified DoclingDocument model: 12 formats, one entry point, one API, aligned with the official protocol |
+| Heterogeneous formats: PDF, Office, web, email and images each need their own parsing stack, and stitching them together is expensive to maintain | One unified DoclingDocument model: 13 formats, one entry point, one API, aligned with the official protocol |
 | High-quality options (Python model pipelines) are heavy: a Python service plus multi-GB layout/table models — hard to run for bulk ingestion, CI and edge nodes | Pure Go, single binary, `go get` and go; millisecond-to-second parsing with zero external services |
 | All-model is slow and costly; all-rules caps the quality | Hybrid architecture: a rule-engine baseline, with scanned pages, image tables and formula-dense pages auto-routed to your LLM by quality signals — the model is spent only where it matters |
 | Model transcription "hallucinates" data, so ingested results cannot be trusted | Never fabricate: chart data is restored exactly from the document's own caches; content the rules cannot determine keeps its raw signal explicitly instead of a guess |
@@ -116,6 +116,7 @@ xychart-beta
 | Markdown | ✅ | ✅ |
 | AsciiDoc | ✅ | ❌ |
 | EML email | ✅ | ✅ (also MSG) |
+| CAD drawings (DWG R9–R2018 / DXF) | ✅ (smart sheet split, one page per frame) | ❌ |
 | Images PNG/JPEG/BMP/WEBP | ✅ | ✅ (also TIFF) |
 | Plain text | ✅ | ✅ |
 | Docling JSON (read back) | ✅ | ✅ |
@@ -152,6 +153,7 @@ xychart-beta
 | Markdown | `ParseMarkdown` | Flattened headings, image placeholders, GFM tables |
 | AsciiDoc | `ParseAsciiDoc` | Heading tree, lists, literal/source blocks |
 | EML | `ParseEML` | RFC 5322 headers, best-body selection, common charsets, attachment names |
+| CAD drawings | `ParseCAD` | DWG (R9–R2018) / DXF (ASCII/binary) auto-detection, smart sheet splitting with one page per frame (sheet title + rendered image + frame texts), GBK/UTF-16 CJK decoding |
 | Images | `ParseImage` | PNG/JPEG/BMP/WEBP; adds recognition results when OCR is configured |
 | Plain text | `ParseText` | BOM and control-character cleanup |
 | Docling JSON | `ParseDoclingDocument` | Parses JSON produced by a Docling service |
@@ -401,7 +403,7 @@ external services, scanned PDFs rejected with Unsupported); docling takes the **
 | Dimension | anydoc (Rust) | docling (Go) |
 |-----------|----------------|----------------|
 | Positioning | Pure conversion: no OCR, no chunking, no chart semantics | Conversion + structure + RAG chunking, one stop to retrieval |
-| Formats | 14 (strong on legacy binary .doc/.ppt/.xls, ODF, RTF, EPUB) | 12 (strong on HTML, Markdown, AsciiDoc, EML email, images, Docling JSON read-back) |
+| Formats | 14 (strong on legacy binary .doc/.ppt/.xls, ODF, RTF, EPUB) | 13 (strong on HTML, Markdown, AsciiDoc, EML email, images, CAD drawings, Docling JSON read-back) |
 | Output | GFM Markdown only | Markdown / HTML / Docling JSON (lossless) / content_list + three chunkers |
 | PDF depth | Text PDFs extracted directly; scans rejected with Unsupported (OCR via Firecrawl's hosted API) | Deep text-PDF parsing (cross-page tables / multi-column / font recovery / JPEG2000-JBIG2-soft masks); scanned pages route to **self-hosted** LLM hooks |
 | Charts | No chart semantics | OOXML chart data backfilled as searchable tables + SVG previews |
@@ -471,7 +473,7 @@ docling/
 ├── chunker.go hybrid_chunker.go content_chunk.go # three chunking strategies
 ├── pdf*.go              # PDF: text/layout/tables/vision routing/image orchestration
 ├── docx*.go pptx.go sheet.go # Word / PPT / Excel parsing
-├── html.go markdown.go asciidoc.go eml.go image.go text.go table.go
+├── html.go markdown.go asciidoc.go eml.go image.go text.go table.go cad.go
 ├── internal/pdfenc/     # PDF byte-encoding layer: ToUnicode/CMap/SFNT recovery, JPX/JBIG2 decoding, soft-mask alpha
 ├── internal/ooxml/      # Strict OOXML → Transitional normalization
 ├── examples/            # per-format sample sources paired with expected Markdown

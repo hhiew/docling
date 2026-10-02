@@ -4,7 +4,7 @@
 
 > 把任何文档喂给你的大模型 —— 纯 Go 单二进制,快 1~2 个数量级,复杂页可挂大模型增强。
 
-`docling` 将 PDF、Word、PPT、Excel/CSV、HTML、Markdown、AsciiDoc、EML 邮件、图片与纯文本解析为统一的 **DoclingDocument** 结构化模型(对齐 Docling Core `1.10.0` 官方协议),为 RAG 切片、向量化和 Agent 工具链提供开箱即用的文档摄入层。
+`docling` 将 PDF、Word、PPT、Excel/CSV、HTML、Markdown、AsciiDoc、EML 邮件、图片、纯文本与 CAD 图纸(DWG/DXF)解析为统一的 **DoclingDocument** 结构化模型(对齐 Docling Core `1.10.0` 官方协议),为 RAG 切片、向量化和 Agent 工具链提供开箱即用的文档摄入层。
 
 > 命名说明:本仓库是 [Docling](https://github.com/docling-project/docling) 协议的纯 Go 实现,Go 包名为 `docling`,与 Python 官方实现共享同一文档模型。
 
@@ -16,7 +16,7 @@
 
 | 痛点 | docling(Go)的答案 |
 |------|---------------------|
-| 文档格式异构:PDF、Office、网页、邮件、图片各有一套解析栈,拼起来维护成本极高 | 统一 DoclingDocument 模型:12 种格式一个入口、一套 API,输出对齐官方协议 |
+| 文档格式异构:PDF、Office、网页、邮件、图片各有一套解析栈,拼起来维护成本极高 | 统一 DoclingDocument 模型:13 种格式一个入口、一套 API,输出对齐官方协议 |
 | 现有高质方案(Python 模型管线)部署重:Python 服务 + 数 GB 布局/表格模型,批量入库、CI、边缘节点很难落地 | 纯 Go 单二进制,`go get` 即用,毫秒~秒级解析,零外部服务 |
 | 全靠模型太贵太慢,全靠规则质量有上限 | 混合架构:规则引擎保底,扫描件/图片表格/公式密集页按质量信号自动路由给大模型——模型只用在刀刃上 |
 | 模型转写会"幻觉"改数据,入库结果不可信 | 不伪造结果:图表数据从文档自带缓存精确还原,规则不确定的内容保留原始信号并明示,而非猜一个 |
@@ -104,6 +104,7 @@ xychart-beta
 | Markdown | ✅ | ✅ |
 | AsciiDoc | ✅ | ❌ |
 | EML 邮件 | ✅ | ✅(另支持 MSG) |
+| CAD 图纸(DWG R9~R2018 / DXF) | ✅(智能拆图,每图框一页) | ❌ |
 | 图片 PNG/JPEG/BMP/WEBP | ✅ | ✅(另支持 TIFF) |
 | 纯文本 | ✅ | ✅ |
 | Docling JSON(回读) | ✅ | ✅ |
@@ -140,6 +141,7 @@ xychart-beta
 | Markdown | `ParseMarkdown` | 平铺标题、图片占位、GFM 表格 |
 | AsciiDoc | `ParseAsciiDoc` | 标题树、列表、字面/源码块 |
 | EML 邮件 | `ParseEML` | RFC 5322 头、正文择优、常见字符集、附件名称 |
+| CAD 图纸 | `ParseCAD` | DWG(R9~R2018)/DXF(ASCII/二进制)自动识别、智能图框拆分逐框一页(图名标题+渲染图+图框文本)、GBK/UTF-16 中文解码 |
 | 图片 | `ParseImage` | PNG/JPEG/BMP/WEBP;配置 OCR 后追加识别结构 |
 | 纯文本 | `ParseText` | BOM 与控制字符清理 |
 | Docling JSON | `ParseDoclingDocument` | 解析 Docling 服务输出的 JSON |
@@ -368,7 +370,7 @@ fmt.Println(md) // 公式 LaTeX、SmartArt 流程 SVG、艺术字与 OLE 分类�
 | 维度 | anydoc(Rust) | docling(Go) |
 |------|----------------|----------------|
 | 定位 | 纯转换层:不做 OCR/chunking/图表语义 | 转换 + 结构化 + RAG 分块,一站到检索 |
-| 格式 | 14 种(强在旧二进制 .doc/.ppt/.xls、ODF、RTF、EPUB) | 12 种(强在 HTML、Markdown、AsciiDoc、EML 邮件、图片、Docling JSON 回读) |
+| 格式 | 14 种(强在旧二进制 .doc/.ppt/.xls、ODF、RTF、EPUB) | 13 种(强在 HTML、Markdown、AsciiDoc、EML 邮件、图片、CAD 图纸、Docling JSON 回读) |
 | 输出 | 仅 GFM Markdown | Markdown / HTML / Docling JSON(无损)/ content_list + 三种分块器 |
 | PDF 深度 | 文本型直接提取;扫描件返回 Unsupported(OCR 走 Firecrawl 托管 API) | 文本型深度解析(跨页表格/多栏/字体乱码恢复/JPEG2000-JBIG2-软蒙版);扫描页可挂**自部署**大模型钩子 |
 | 图表 | 不解析图表语义 | OOXML 图表数据回填为可检索表格 + SVG 预览 |
@@ -417,7 +419,7 @@ docling/
 ├── chunker.go hybrid_chunker.go content_chunk.go # 三种分块策略
 ├── pdf*.go              # PDF:文本/布局/表格/视觉路由/图片编排
 ├── docx*.go pptx.go sheet.go # Word / PPT / Excel 解析
-├── html.go markdown.go asciidoc.go eml.go image.go text.go table.go
+├── html.go markdown.go asciidoc.go eml.go image.go text.go table.go cad.go
 ├── internal/pdfenc/     # PDF 字节编码层:ToUnicode/CMap/SFNT 恢复、JPX/JBIG2 解码、软蒙版 alpha
 ├── internal/ooxml/      # Strict OOXML → Transitional 归一化
 ├── examples/            # 各格式样例源文件 ↔ Markdown 期望输出对照集
